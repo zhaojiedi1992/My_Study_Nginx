@@ -49,11 +49,19 @@
 <li class="toctree-l3"><a class="reference internal" href="#openrestry">1.5.3. openrestry</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#id7">1.6. nginx编译安装</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id8">1.6.1. nginx配置语法</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id9">1.6.2. 配置样例</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id7">1.6. nginx配置语法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id8">1.7. 配置样例</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id9">1.8. nginx 编译安装</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id10">1.9. nginx命令行</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id11">1.9.1. 重载配置文件</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id12">1.9.2. 热部署</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id13">1.9.3. 切割日志文件</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#ssl">1.10. SSL发展</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id14">1.11. SSL通信过程</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id15">1.12. 配置证书</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#openresty-lua">1.13. openresty+lua样例</a></li>
 </ul>
 </li>
 </ul>
@@ -144,10 +152,7 @@
 </section>
 </section>
 <section id="id7">
-<h2><span class="section-number">1.6. </span>nginx编译安装<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
-<p>nginx的编译安装和其他的软件基本一致。步骤如下。</p>
-<section id="id8">
-<h3><span class="section-number">1.6.1. </span>nginx配置语法<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h3>
+<h2><span class="section-number">1.6. </span>nginx配置语法<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
 <ul class="simple">
 <li><p>配置文件由指令与指令块构成</p></li>
 <li><p>每个指令以分号结尾，指令和参数之间空格分隔。</p></li>
@@ -158,10 +163,98 @@
 <li><p>部分指令是支持正则表达式的。</p></li>
 </ul>
 </section>
-<section id="id9">
-<h3><span class="section-number">1.6.2. </span>配置样例<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h3>
+<section id="id8">
+<h2><span class="section-number">1.7. </span>配置样例<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h2>
 <img alt="../_images/nginx02.png" src="../_images/nginx02.png" />
 </section>
+<section id="id9">
+<h2><span class="section-number">1.8. </span>nginx 编译安装<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget https://nginx.org/download/nginx-1.20.2.tar.gz
+tar xf nginx-1.20.2.tar.gz
+<span class="nb">cd</span> nginx-1.20.2/
+yum install gcc
+./configure --prefix<span class="o">=</span>/root/nginx
+make <span class="o">&amp;&amp;</span> make install
+<span class="nb">cd</span> /root/nginx
+./sbin/nginx
+ps axu <span class="p">|</span>grep nginx
+</pre></div>
+</div>
+</section>
+<section id="id10">
+<h2><span class="section-number">1.9. </span>nginx命令行<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h2>
+<section id="id11">
+<h3><span class="section-number">1.9.1. </span>重载配置文件<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h3>
+</section>
+<section id="id12">
+<h3><span class="section-number">1.9.2. </span>热部署<a class="headerlink" href="#id12" title="Permalink to this headline"></a></h3>
+<p>热部署是保证在一个nginx状态下，完成不影响业务的前提下更新nginx从一个版本到另一个版本的过程。</p>
+</section>
+<section id="id13">
+<h3><span class="section-number">1.9.3. </span>切割日志文件<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mv access.log access.log.<span class="k">$(</span>date <span class="s2">&quot;+%F&quot;</span><span class="k">)</span>
+./sbin/nginx -s reopen
+</pre></div>
+</div>
+</section>
+</section>
+<section id="ssl">
+<h2><span class="section-number">1.10. </span>SSL发展<a class="headerlink" href="#ssl" title="Permalink to this headline"></a></h2>
+<p>发展过程</p>
+<p>ssl3.0 =&gt; tls1.0 =&gt; tls1.1 =&gt; tls1.2 =&gt; tls1.3</p>
+<p>密码套件</p>
+<img alt="../_images/nginx03.png" src="../_images/nginx03.png" />
+<p>证书类型</p>
+<p>域名验证 =&gt; 组织验证 =&gt; 扩展验证</p>
+</section>
+<section id="id14">
+<h2><span class="section-number">1.11. </span>SSL通信过程<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx04.png" src="../_images/nginx04.png" />
+</section>
+<section id="id15">
+<h2><span class="section-number">1.12. </span>配置证书<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h2>
+<p>一般情况下会通过nginx的include来包含各个域名的配置文件，
+通过include sites/<a href="#id16"><span class="problematic" id="id17">*</span></a>.conf 这种片段来包含sites目录下各个配置文件， 具体配置文件里面是每个域名的配置。</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 老的配置</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># cat sites/nx.linuxpanda.tech.conf</span>
+server<span class="o">{</span>
+    listen <span class="m">8083</span> <span class="p">;</span>
+    server_name nx.linuxpanda.tech<span class="p">;</span>
+    <span class="nb">alias</span> /html/nx<span class="p">;</span>
+<span class="o">}</span>
+
+<span class="c1"># 申请证书，一般是2个文件， crt 一个 key一个， 一个是公钥的一个是私钥的。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># cat sites/nx.linuxpanda.tech.conf</span>
+server<span class="o">{</span>
+    listen <span class="m">8083</span> <span class="p">;</span>
+    listen <span class="m">8443</span> ssl<span class="p">;</span>
+    server_name nx.linuxpanda.tech<span class="p">;</span>
+    <span class="nb">alias</span> /html/nx<span class="p">;</span>
+    ssl_certificate     ssl/nx.linuxpanda.tech.crt<span class="p">;</span>
+        ssl_certificate_key ssl/nx.linuxpanda.tech.key<span class="p">;</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>重载下nginx即可生效</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>如果你要使用免费证书的话，这里建议大家选择国外的证书免费提供商，国内的太绕了，需要填写和登记的太多了。</p>
+</div>
+</section>
+<section id="openresty-lua">
+<h2><span class="section-number">1.13. </span>openresty+lua样例<a class="headerlink" href="#openresty-lua" title="Permalink to this headline"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1">#添加如下片段</span>
+    location /lua <span class="o">{</span>
+        default_type text/html<span class="p">;</span>
+                content_by_lua_block <span class="o">{</span>
+                ngx.say<span class="o">(</span><span class="s2">&quot;&lt;p&gt;hello, world&lt;/p&gt;&quot;</span><span class="o">)</span>
+            <span class="o">}</span>
+    <span class="o">}</span>
+<span class="c1"># 重载一下</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 openresty<span class="o">]</span><span class="c1"># curl http://10.157.89.215:8084/lua</span>
+&lt;p&gt;hello, world&lt;/p&gt;
+</pre></div>
+</div>
 </section>
 </section>
 
