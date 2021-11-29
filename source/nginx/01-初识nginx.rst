@@ -94,6 +94,7 @@ nginx命令行
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: bash
+
     vim conf/nginx.conf 修改端口， 
     ./sbin/nginx -s reload 
 
@@ -102,7 +103,8 @@ nginx命令行
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 热部署是保证在一个nginx状态下，完成不影响业务的前提下更新nginx从一个版本到另一个版本的过程。
 
-.. code-block:: bash 
+.. code-block:: bash
+
     # 备份下老版本的
     mv sbin/nginx  sbin/nginx.old
     # 弄新版本nginx过来
