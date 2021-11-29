@@ -1,5 +1,5 @@
 .. toctree::
-   :maxdepth: 6
+   :maxdepth: 3
    :caption: 初识nginx
    :glob:
 
