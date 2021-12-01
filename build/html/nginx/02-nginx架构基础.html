@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>nginx架构基础 &mdash; My_Study_Nginx v1.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> My_Study_Nginx
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">nginx</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="01-%E5%88%9D%E8%AF%86nginx.html">1. 初识nginx</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">My_Study_Nginx</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>nginx架构基础</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/nginx/02-nginx架构基础.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="nginx">
+<h1>nginx架构基础<a class="headerlink" href="#nginx" title="Permalink to this headline"></a></h1>
+<section id="id1">
+<h2>nginx请求处理流程<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx05.png" src="../_images/nginx05.png" />
+<p>nginx接收流量， 通过fastcgi、tcp代理等转发后端。
+内部完成日志处理，静态文件处理，和一些状态机处理。</p>
+</section>
+<section id="id2">
+<h2>nginx进程结构<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx06.png" src="../_images/nginx06.png" />
+<p>基本是有个master进程的， 多个work进程的。
+还可能有cache manager进程和cache loader进程。</p>
+</section>
+<section id="id3">
+<h2>nginx进程管理<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<p><strong>master 进程</strong></p>
+<ul class="simple">
+<li><p>需要监控worker进程的chld信号</p></li>
+<li><p>管理worker进程</p></li>
+<li><p>接收控制信号 term int quit hup usr1 usr2 winch</p></li>
+</ul>
+<p><strong>work进程</strong></p>
+<ul class="simple">
+<li><p>接收管理信号 term quit usr1 winch</p></li>
+</ul>
+<p><strong>nginx命令行</strong></p>
+<ul class="simple">
+<li><p>reload : hup</p></li>
+<li><p>reopen : usr1</p></li>
+<li><p>stop : term</p></li>
+<li><p>quit : quit</p></li>
+</ul>
+</section>
+<section id="reload">
+<h2>reload流程<a class="headerlink" href="#reload" title="Permalink to this headline"></a></h2>
+<ol class="arabic simple">
+<li><p>向master发送hup信号</p></li>
+<li><p>master校验conf配置</p></li>
+<li><p>master打开新的端口（如果需要）</p></li>
+<li><p>master进程用新的配置启动新的worker子进程。</p></li>
+<li><p>master向老的worker发送quit信号</p></li>
+<li><p>老的worker进程关闭监听句柄，处理完毕当前连接结束进程。</p></li>
+</ol>
+</section>
+<section id="id4">
+<h2>热升级流程<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<ol class="arabic simple">
+<li><p>旧nginx文件替换为新的nginx文件</p></li>
+<li><p>给master发送usr2信号</p></li>
+<li><p>master修改pid文件名字，加后缀.oldbin</p></li>
+<li><p>master进程使用新的nginx文件启动新的master进程</p></li>
+<li><p>向老的master发送quit信号，关闭老的master</p></li>
+</ol>
+<p>如果要回滚的话， 可以给老的master发送hup信号， 给新的master发送quit信号即可。</p>
+</section>
+<section id="worker">
+<h2>worker进程优雅退出<a class="headerlink" href="#worker" title="Permalink to this headline"></a></h2>
+<ol class="arabic simple">
+<li><p>设置定时器worker_shutdown_timeout</p></li>
+<li><p>关闭监听句柄</p></li>
+<li><p>关闭空闲连接</p></li>
+<li><p>循环关闭断开的连接</p></li>
+<li><p>退出进程</p></li>
+</ol>
+</section>
+<section id="id5">
+<h2>网络传输<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<p>网络传输过程</p>
+<img alt="../_images/nginx07.png" src="../_images/nginx07.png" />
+<p>tcp流与报文</p>
+<img alt="../_images/nginx08.png" src="../_images/nginx08.png" />
+</section>
+<section id="epoll">
+<h2>epoll高性能<a class="headerlink" href="#epoll" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>每次只处理活跃连接。</p></li>
+<li><p>实现层面红黑树和链表高效。</p></li>
+</ul>
+</section>
+<section id="id6">
+<h2>请求切换<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>apache传统web服务， 进程调度比较多。</p></li>
+<li><p>nginx用户态完成连接切换</p></li>
+</ul>
+</section>
+<section id="id7">
+<h2>nginx模块<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
+<p>主要模块</p>
+<ul class="simple">
+<li><p>events</p></li>
+<li><p>http</p></li>
+<li><p>core</p></li>
+<li><p>errlog</p></li>
+<li><p>mail</p></li>
+<li><p>thread_poll</p></li>
+<li><p>stream</p></li>
+<li><p>openssl</p></li>
+</ul>
+</section>
+<section id="id8">
+<h2>连接池<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h2>
+<p>包含了对下游客户端的连接和对上游服务的连接。</p>
+</section>
+<section id="id9">
+<h2>内存池<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h2>
+<p>connection_poll_size 内存提前分配好一批。
+大块内存使用alloc分配。</p>
+<p>连接内存池</p>
+<p>请求内存池 一般4k</p>
+<ul class="simple">
+<li><p>connection_poll_size</p></li>
+<li><p>request_poll_size</p></li>
+</ul>
+</section>
+<section id="id10">
+<h2>nginx进程间的通讯方式<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h2>
+<p>信号和共享内存
+通过共享内存的worker进程之间存在抢占问题， 需要引入锁机制。 内存管理对应需要slab内存管理器。</p>
+</section>
+<section id="id11">
+<h2>哪些需要共享内存<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>限流类的</p></li>
+<li><p>cache类</p></li>
+<li><p>lua使用</p></li>
+</ul>
+</section>
+<section id="nginx-slab">
+<h2>nginx slab 编译使用<a class="headerlink" href="#nginx-slab" title="Permalink to this headline"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget https://tengine.taobao.org/download/tengine-2.3.3.tar.gz
+tar xf tengine-2.3.3.tar.gz
+./configure --add-module<span class="o">=</span>/root/tengine-2.3.3/modules/ngx_slab_stat
+make <span class="o">&amp;&amp;</span> make install
+替换掉openrest的二进制文件， 重启。
+nginx配置的修改
+    lua_shared_dict dogs 10m<span class="p">;</span>
+            <span class="nv">location</span> <span class="o">=</span> /slab_stat <span class="o">{</span>
+       slab_stat<span class="p">;</span>
+    <span class="o">}</span>
+    location /set <span class="o">{</span>
+            content_by_lua_block<span class="o">{</span>
+                    <span class="nb">local</span> <span class="nv">dogs</span> <span class="o">=</span> ngx.shared.dogs
+                    dogs:set<span class="o">(</span><span class="s2">&quot;panda&quot;</span>,1<span class="o">)</span>
+                    ngx.say<span class="o">(</span><span class="s2">&quot;stored&quot;</span><span class="o">)</span>
+            <span class="o">}</span>
+    <span class="o">}</span>
+
+    location /get <span class="o">{</span>
+            content_by_lua_block<span class="o">{</span>
+                    <span class="nb">local</span> <span class="nv">dogs</span> <span class="o">=</span> ngx.shared.dogs
+                    ngx.say<span class="o">(</span>dogs:get<span class="o">(</span><span class="s2">&quot;panda&quot;</span><span class="o">))</span>
+            <span class="o">}</span>
+    <span class="o">}</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://localhost:8084/slab_stat</span>
+* shared memory: dogs
+total:       <span class="m">10240</span><span class="o">(</span>KB<span class="o">)</span> free:       <span class="m">10168</span><span class="o">(</span>KB<span class="o">)</span> size:           <span class="m">4</span><span class="o">(</span>KB<span class="o">)</span>
+pages:       <span class="m">10168</span><span class="o">(</span>KB<span class="o">)</span> start:00007F3CCFB54000 end:00007F3CD0544000
+slot:           <span class="m">8</span><span class="o">(</span>Bytes<span class="o">)</span> total:           <span class="m">0</span> used:           <span class="m">0</span> reqs:           <span class="m">0</span> fails:           <span class="m">0</span>
+slot:          <span class="m">16</span><span class="o">(</span>Bytes<span class="o">)</span> total:           <span class="m">0</span> used:           <span class="m">0</span> reqs:           <span class="m">0</span> fails:           <span class="m">0</span>
+slot:          <span class="m">32</span><span class="o">(</span>Bytes<span class="o">)</span> total:         <span class="m">127</span> used:           <span class="m">1</span> reqs:           <span class="m">1</span> fails:           <span class="m">0</span>
+slot:          <span class="m">64</span><span class="o">(</span>Bytes<span class="o">)</span> total:           <span class="m">0</span> used:           <span class="m">0</span> reqs:           <span class="m">0</span> fails:           <span class="m">0</span>
+slot:         <span class="m">128</span><span class="o">(</span>Bytes<span class="o">)</span> total:          <span class="m">32</span> used:           <span class="m">2</span> reqs:           <span class="m">2</span> fails:           <span class="m">0</span>
+slot:         <span class="m">256</span><span class="o">(</span>Bytes<span class="o">)</span> total:           <span class="m">0</span> used:           <span class="m">0</span> reqs:           <span class="m">0</span> fails:           <span class="m">0</span>
+slot:         <span class="m">512</span><span class="o">(</span>Bytes<span class="o">)</span> total:           <span class="m">0</span> used:           <span class="m">0</span> reqs:           <span class="m">0</span> fails:           <span class="m">0</span>
+slot:        <span class="m">1024</span><span class="o">(</span>Bytes<span class="o">)</span> total:           <span class="m">0</span> used:           <span class="m">0</span> reqs:           <span class="m">0</span> fails:           <span class="m">0</span>
+slot:        <span class="m">2048</span><span class="o">(</span>Bytes<span class="o">)</span> total:           <span class="m">0</span> used:           <span class="m">0</span> reqs:           <span class="m">0</span> fails:           <span class="m">0</span>
+</pre></div>
+</div>
+</section>
+<section id="id12">
+<h2>nginx容器<a class="headerlink" href="#id12" title="Permalink to this headline"></a></h2>
+<section id="id13">
+<h3>哈希表配置<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>bucket_size : 控制每个的大小。</p></li>
+<li><p>max_size 这个控制一共最多不能超过多少个。</p></li>
+</ul>
+<img alt="../_images/nginx09.png" src="../_images/nginx09.png" />
+</section>
+<section id="id14">
+<h3>红黑树<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h3>
+<p>自平衡的二叉查找树的特点</p>
+<ul class="simple">
+<li><p>高度不会超过2 log(n)</p></li>
+<li><p>增删改查复杂度log(n)</p></li>
+<li><p>遍历复杂度o(n)</p></li>
+</ul>
+</section>
+</section>
+<section id="id15">
+<h2>如何编译动态模块<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h2>
+<p>动态模块一些，频繁更新的时候建议使用动态模块， 不用每次去更新二进制文件的。
+这个在编译的时候使用–add-dynamic-module即可。</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, zhaojiedi1992@outlook.com.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
