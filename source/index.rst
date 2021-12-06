@@ -11,3 +11,4 @@ my_study_nginx's 学习笔记
     :numbered:
 
     nginx/01-初识nginx
+    nginx/02-nginx架构基础

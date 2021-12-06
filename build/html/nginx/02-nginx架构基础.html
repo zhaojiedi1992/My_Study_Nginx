@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>nginx架构基础 &mdash; My_Study_Nginx v1.0 documentation</title>
+  <title>2. nginx架构基础 &mdash; My_Study_Nginx v1.0 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -17,7 +17,8 @@
         <script src="../_static/doctools.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="1. 初识nginx" href="01-%E5%88%9D%E8%AF%86nginx.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -36,8 +37,32 @@
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">nginx</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="01-%E5%88%9D%E8%AF%86nginx.html">1. 初识nginx</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">2. nginx架构基础</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id1">2.1. nginx请求处理流程</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">2.2. nginx进程结构</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">2.3. nginx进程管理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#reload">2.4. reload流程</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">2.5. 热升级流程</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#worker">2.6. worker进程优雅退出</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">2.7. 网络传输</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#epoll">2.8. epoll高性能</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id6">2.9. 请求切换</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id7">2.10. nginx模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id8">2.11. 连接池</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id9">2.12. 内存池</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id10">2.13. nginx进程间的通讯方式</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id11">2.14. 哪些需要共享内存</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nginx-slab">2.15. nginx slab 编译使用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id12">2.16. nginx容器</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id13">2.16.1. 哈希表配置</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id14">2.16.2. 红黑树</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id15">2.17. 如何编译动态模块</a></li>
+</ul>
+</li>
 </ul>
 
         </div>
@@ -54,7 +79,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>nginx架构基础</li>
+      <li><span class="section-number">2. </span>nginx架构基础</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/nginx/02-nginx架构基础.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -65,21 +90,21 @@
            <div itemprop="articleBody">
              
   <section id="nginx">
-<h1>nginx架构基础<a class="headerlink" href="#nginx" title="Permalink to this headline"></a></h1>
+<h1><span class="section-number">2. </span>nginx架构基础<a class="headerlink" href="#nginx" title="Permalink to this headline"></a></h1>
 <section id="id1">
-<h2>nginx请求处理流程<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.1. </span>nginx请求处理流程<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h2>
 <img alt="../_images/nginx05.png" src="../_images/nginx05.png" />
 <p>nginx接收流量， 通过fastcgi、tcp代理等转发后端。
 内部完成日志处理，静态文件处理，和一些状态机处理。</p>
 </section>
 <section id="id2">
-<h2>nginx进程结构<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.2. </span>nginx进程结构<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
 <img alt="../_images/nginx06.png" src="../_images/nginx06.png" />
 <p>基本是有个master进程的， 多个work进程的。
 还可能有cache manager进程和cache loader进程。</p>
 </section>
 <section id="id3">
-<h2>nginx进程管理<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.3. </span>nginx进程管理<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
 <p><strong>master 进程</strong></p>
 <ul class="simple">
 <li><p>需要监控worker进程的chld信号</p></li>
@@ -99,7 +124,7 @@
 </ul>
 </section>
 <section id="reload">
-<h2>reload流程<a class="headerlink" href="#reload" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.4. </span>reload流程<a class="headerlink" href="#reload" title="Permalink to this headline"></a></h2>
 <ol class="arabic simple">
 <li><p>向master发送hup信号</p></li>
 <li><p>master校验conf配置</p></li>
@@ -110,7 +135,7 @@
 </ol>
 </section>
 <section id="id4">
-<h2>热升级流程<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.5. </span>热升级流程<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
 <ol class="arabic simple">
 <li><p>旧nginx文件替换为新的nginx文件</p></li>
 <li><p>给master发送usr2信号</p></li>
@@ -121,7 +146,7 @@
 <p>如果要回滚的话， 可以给老的master发送hup信号， 给新的master发送quit信号即可。</p>
 </section>
 <section id="worker">
-<h2>worker进程优雅退出<a class="headerlink" href="#worker" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.6. </span>worker进程优雅退出<a class="headerlink" href="#worker" title="Permalink to this headline"></a></h2>
 <ol class="arabic simple">
 <li><p>设置定时器worker_shutdown_timeout</p></li>
 <li><p>关闭监听句柄</p></li>
@@ -131,28 +156,28 @@
 </ol>
 </section>
 <section id="id5">
-<h2>网络传输<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.7. </span>网络传输<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
 <p>网络传输过程</p>
 <img alt="../_images/nginx07.png" src="../_images/nginx07.png" />
 <p>tcp流与报文</p>
 <img alt="../_images/nginx08.png" src="../_images/nginx08.png" />
 </section>
 <section id="epoll">
-<h2>epoll高性能<a class="headerlink" href="#epoll" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.8. </span>epoll高性能<a class="headerlink" href="#epoll" title="Permalink to this headline"></a></h2>
 <ul class="simple">
 <li><p>每次只处理活跃连接。</p></li>
 <li><p>实现层面红黑树和链表高效。</p></li>
 </ul>
 </section>
 <section id="id6">
-<h2>请求切换<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.9. </span>请求切换<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
 <ul class="simple">
 <li><p>apache传统web服务， 进程调度比较多。</p></li>
 <li><p>nginx用户态完成连接切换</p></li>
 </ul>
 </section>
 <section id="id7">
-<h2>nginx模块<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.10. </span>nginx模块<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
 <p>主要模块</p>
 <ul class="simple">
 <li><p>events</p></li>
@@ -166,11 +191,11 @@
 </ul>
 </section>
 <section id="id8">
-<h2>连接池<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.11. </span>连接池<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h2>
 <p>包含了对下游客户端的连接和对上游服务的连接。</p>
 </section>
 <section id="id9">
-<h2>内存池<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.12. </span>内存池<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h2>
 <p>connection_poll_size 内存提前分配好一批。
 大块内存使用alloc分配。</p>
 <p>连接内存池</p>
@@ -181,12 +206,12 @@
 </ul>
 </section>
 <section id="id10">
-<h2>nginx进程间的通讯方式<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.13. </span>nginx进程间的通讯方式<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h2>
 <p>信号和共享内存
 通过共享内存的worker进程之间存在抢占问题， 需要引入锁机制。 内存管理对应需要slab内存管理器。</p>
 </section>
 <section id="id11">
-<h2>哪些需要共享内存<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.14. </span>哪些需要共享内存<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h2>
 <ul class="simple">
 <li><p>限流类的</p></li>
 <li><p>cache类</p></li>
@@ -194,7 +219,7 @@
 </ul>
 </section>
 <section id="nginx-slab">
-<h2>nginx slab 编译使用<a class="headerlink" href="#nginx-slab" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.15. </span>nginx slab 编译使用<a class="headerlink" href="#nginx-slab" title="Permalink to this headline"></a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget https://tengine.taobao.org/download/tengine-2.3.3.tar.gz
 tar xf tengine-2.3.3.tar.gz
 ./configure --add-module<span class="o">=</span>/root/tengine-2.3.3/modules/ngx_slab_stat
@@ -236,9 +261,9 @@ slot:        <span class="m">2048</span><span class="o">(</span>Bytes<span class
 </div>
 </section>
 <section id="id12">
-<h2>nginx容器<a class="headerlink" href="#id12" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.16. </span>nginx容器<a class="headerlink" href="#id12" title="Permalink to this headline"></a></h2>
 <section id="id13">
-<h3>哈希表配置<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h3>
+<h3><span class="section-number">2.16.1. </span>哈希表配置<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h3>
 <ul class="simple">
 <li><p>bucket_size : 控制每个的大小。</p></li>
 <li><p>max_size 这个控制一共最多不能超过多少个。</p></li>
@@ -246,7 +271,7 @@ slot:        <span class="m">2048</span><span class="o">(</span>Bytes<span class
 <img alt="../_images/nginx09.png" src="../_images/nginx09.png" />
 </section>
 <section id="id14">
-<h3>红黑树<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h3>
+<h3><span class="section-number">2.16.2. </span>红黑树<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h3>
 <p>自平衡的二叉查找树的特点</p>
 <ul class="simple">
 <li><p>高度不会超过2 log(n)</p></li>
@@ -256,7 +281,7 @@ slot:        <span class="m">2048</span><span class="o">(</span>Bytes<span class
 </section>
 </section>
 <section id="id15">
-<h2>如何编译动态模块<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">2.17. </span>如何编译动态模块<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h2>
 <p>动态模块一些，频繁更新的时候建议使用动态模块， 不用每次去更新二进制文件的。
 这个在编译的时候使用–add-dynamic-module即可。</p>
 </section>
@@ -265,7 +290,9 @@ slot:        <span class="m">2048</span><span class="o">(</span>Bytes<span class
 
            </div>
           </div>
-          <footer>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="01-%E5%88%9D%E8%AF%86nginx.html" class="btn btn-neutral float-left" title="1. 初识nginx" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
 
   <hr/>
 
