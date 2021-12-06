@@ -49,6 +49,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#id5">3.6. 接收请求事件模块详细</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id6">3.7. 正则表达式</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#server-name">3.8. server_name 指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id7">3.9. 使用正则创建变量</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#server">3.10. server匹配顺序</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nginx11">3.11. nginx处理的11个阶段</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ip">3.12. 如何获取真实的用户ip地址。</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id8">3.13. 如果拿到用户的ip如何使用</a></li>
 </ul>
 </li>
 </ul>
@@ -158,6 +163,8 @@ large_clent_header_buffers: 4 8k 的大小。 继续解析行。 解析好后，
 <h2><span class="section-number">3.8. </span>server_name 指令<a class="headerlink" href="#server-name" title="Permalink to this headline"></a></h2>
 <p>server_name 后面可以指定多个域名的， 第一个是主域名。
 相关参数 server_name_in_redirect on表示在重定向的时候使用主域名而非用户访问过来的域名进行重定向。</p>
+<p>补充说明:</p>
+<p>server_name 的指定的特殊情况。 “” 表示匹配没有传递host头部的请求， _表示匹配所有。</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
 	listen 8084; 
 	server_name n-n1.linuxpanda.tech n-n2.linuxpanda.tech ; 
@@ -166,6 +173,95 @@ large_clent_header_buffers: 4 8k 的大小。 继续解析行。 解析好后，
 }
 </pre></div>
 </div>
+<p>测试下如下</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># server_name_in_redirect on 的情况下  可以发现重定向的结果都是变成了主域名的host了。</span>
+
+curl http://n-n1.linuxpanda.tech:8084/ -IL
+HTTP/1.1 <span class="m">302</span> Moved Temporarily
+Server: openresty/1.19.9.1
+Date: Mon, <span class="m">06</span> Dec <span class="m">2021</span> <span class="m">12</span>:28:56 GMT
+Content-Type: text/html
+Content-Length: <span class="m">151</span>
+Location: http://n-n1.linuxpanda.tech:8084/redirect
+Connection: keep-alive
+
+curl http://n-n2.linuxpanda.tech:8084/ -IL
+HTTP/1.1 <span class="m">302</span> Moved Temporarily
+Server: openresty/1.19.9.1
+Date: Mon, <span class="m">06</span> Dec <span class="m">2021</span> <span class="m">12</span>:29:44 GMT
+Content-Type: text/html
+Content-Length: <span class="m">151</span>
+Location: http://n-n1.linuxpanda.tech:8084/redirect
+Connection: keep-alive
+</pre></div>
+</div>
+</section>
+<section id="id7">
+<h2><span class="section-number">3.9. </span>使用正则创建变量<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
+<p>验证结果如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>[root@zhaojiedi-elk-2 conf]# curl http://n-n2.linuxpanda.tech:8084/
+n-n2
+[root@zhaojiedi-elk-2 conf]# curl http://n-n1.linuxpanda.tech:8084/
+n-n1
+</pre></div>
+</div>
+</section>
+<section id="server">
+<h2><span class="section-number">3.10. </span>server匹配顺序<a class="headerlink" href="#server" title="Permalink to this headline"></a></h2>
+<ol class="arabic simple">
+<li><p>精确匹配的</p></li>
+<li><p>*在前的泛域名</p></li>
+<li><p>*在后的泛域名</p></li>
+<li><p>正则匹配的</p></li>
+<li><p>default server</p></li>
+</ol>
+<p>其中default server 是在listen指定default的，那就是default server ， 如果没有。 那就是nginx加载的第一个server为default server 。</p>
+</section>
+<section id="nginx11">
+<h2><span class="section-number">3.11. </span>nginx处理的11个阶段<a class="headerlink" href="#nginx11" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx16.png" src="../_images/nginx16.png" />
+<img alt="../_images/nginx17.png" src="../_images/nginx17.png" />
+<ol class="arabic simple">
+<li><p>post_read</p></li>
+<li><p>server_rewrite</p></li>
+<li><p>find_config</p></li>
+<li><p>rewrite</p></li>
+<li><p>post_rewrite</p></li>
+<li><p>preaccess</p></li>
+<li><p>access</p></li>
+<li><p>post_access</p></li>
+<li><p>precontent</p></li>
+<li><p>content</p></li>
+<li><p>log</p></li>
+</ol>
+</section>
+<section id="ip">
+<h2><span class="section-number">3.12. </span>如何获取真实的用户ip地址。<a class="headerlink" href="#ip" title="Permalink to this headline"></a></h2>
+<p>用户访问到我们的服务，可能经过多层代理后到达的， 一般情况下通过这几种方式获取用户真实ip地址。</p>
+<ul class="simple">
+<li><p>http头部的X-Real-IP用于传递用户的真实ip地址。</p></li>
+<li><p>http头部的X-Forwarded-For用于传递代理等中间ip地址。 一般最后就是用户ip地址。</p></li>
+</ul>
+<p>帮助文档： <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_realip_module.html">https://nginx.org/en/docs/http/ngx_http_realip_module.html</a></p>
+<p>real_ip_header 这个默认值是X-Real-IP的</p>
+<p>测试结果如下</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 可以看到，real_ip_recursive on 开启后， set_real_ip_from指定的地址不会识别为real ip 的， 找到最后一个才算</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-realip.linuxpanda.tech -H &quot;X-Forwarded-For: 1.1.1.1 2.2.2.2 10.157.1.2 10.157.1.3&quot;</span>
+Client real ip: <span class="m">2</span>.2.2.2
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-realip.linuxpanda.tech -H &quot;X-Forwarded-For: 1.1.1.1 2.2.2.2 3.3.3.3 10.157.1.2 10.157.1.3&quot;</span>
+Client real ip: <span class="m">3</span>.3.3.3
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-realip.linuxpanda.tech -H &quot;X-Forwarded-For: 10.157.1.2 10.157.1.3&quot;</span>
+Client real ip: <span class="m">10</span>.157.1.2
+
+<span class="c1"># 可以看到，real_ip_recursive off 关闭后，只是简单的取最后一个的。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-realip.linuxpanda.tech -H &quot;X-Forwarded-For: 1.1.1.1 2.2.2.2 3.3.3.3 10.157.1.2 10.157.1.3&quot;</span>
+Client real ip: <span class="m">10</span>.157.1.3
+</pre></div>
+</div>
+</section>
+<section id="id8">
+<h2><span class="section-number">3.13. </span>如果拿到用户的ip如何使用<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h2>
+<p>nginx中可以通过变量访问到用户的真实ip地址。 remote_addr就是用户的ip地址。 有了这个用户ip可以做些限流等分流操作。</p>
 </section>
 </section>
 

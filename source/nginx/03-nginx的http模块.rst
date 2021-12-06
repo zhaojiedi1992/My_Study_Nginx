@@ -95,8 +95,120 @@ server_name 指令
 server_name 后面可以指定多个域名的， 第一个是主域名。
 相关参数 server_name_in_redirect on表示在重定向的时候使用主域名而非用户访问过来的域名进行重定向。
 
+补充说明: 
+
+server_name 的指定的特殊情况。 "" 表示匹配没有传递host头部的请求， _表示匹配所有。 
+
 .. literalinclude:: ../files/server_name.conf
    :encoding: utf-8
    :language: text 
 
+测试下如下
+
+.. code-block:: bash 
+
+  # server_name_in_redirect on 的情况下  可以发现重定向的结果都是变成了主域名的host了。
+
+  curl http://n-n1.linuxpanda.tech:8084/ -IL
+  HTTP/1.1 302 Moved Temporarily
+  Server: openresty/1.19.9.1
+  Date: Mon, 06 Dec 2021 12:28:56 GMT
+  Content-Type: text/html
+  Content-Length: 151
+  Location: http://n-n1.linuxpanda.tech:8084/redirect
+  Connection: keep-alive
+
+  curl http://n-n2.linuxpanda.tech:8084/ -IL
+  HTTP/1.1 302 Moved Temporarily
+  Server: openresty/1.19.9.1
+  Date: Mon, 06 Dec 2021 12:29:44 GMT
+  Content-Type: text/html
+  Content-Length: 151
+  Location: http://n-n1.linuxpanda.tech:8084/redirect
+  Connection: keep-alive
+
+使用正则创建变量
+------------------------------------
+
+.. literalinclude:: ../files/server_name_regex_var.conf
+   :encoding: utf-8
+   :language: text 
+
+验证结果如下
+
+.. code-block:: text 
+
+  [root@zhaojiedi-elk-2 conf]# curl http://n-n2.linuxpanda.tech:8084/
+  n-n2
+  [root@zhaojiedi-elk-2 conf]# curl http://n-n1.linuxpanda.tech:8084/
+  n-n1
+
+server匹配顺序
+------------------------------------
+
+#. 精确匹配的
+#. \*在前的泛域名 
+#. \*在后的泛域名
+#. 正则匹配的
+#. default server 
+
+其中default server 是在listen指定default的，那就是default server ， 如果没有。 那就是nginx加载的第一个server为default server 。 
+
+nginx处理的11个阶段
+------------------------------------
+
+.. image:: ../images/nginx16.png 
+
+.. image:: ../images/nginx17.png 
+
+#. post_read 
+#. server_rewrite 
+#. find_config 
+#. rewrite 
+#. post_rewrite 
+#. preaccess
+#. access
+#. post_access
+#. precontent 
+#. content 
+#. log 
+
+如何获取真实的用户ip地址。
+------------------------------------
+
+用户访问到我们的服务，可能经过多层代理后到达的， 一般情况下通过这几种方式获取用户真实ip地址。 
+
+- http头部的X-Real-IP用于传递用户的真实ip地址。  
+- http头部的X-Forwarded-For用于传递代理等中间ip地址。 一般最后就是用户ip地址。
+
+帮助文档： https://nginx.org/en/docs/http/ngx_http_realip_module.html
+
+real_ip_header 这个默认值是X-Real-IP的 
+
+
+.. literalinclude:: ../files/real_ip.conf
+   :encoding: utf-8
+   :language: text 
+
+测试结果如下
+
+.. code-block:: bash 
+
+  # 可以看到，real_ip_recursive on 开启后， set_real_ip_from指定的地址不会识别为real ip 的， 找到最后一个才算
+  [root@zhaojiedi-elk-2 nginx]# curl http://n-realip.linuxpanda.tech -H "X-Forwarded-For: 1.1.1.1 2.2.2.2 10.157.1.2 10.157.1.3"
+  Client real ip: 2.2.2.2
+  [root@zhaojiedi-elk-2 nginx]# curl http://n-realip.linuxpanda.tech -H "X-Forwarded-For: 1.1.1.1 2.2.2.2 3.3.3.3 10.157.1.2 10.157.1.3"
+  Client real ip: 3.3.3.3
+  [root@zhaojiedi-elk-2 nginx]# curl http://n-realip.linuxpanda.tech -H "X-Forwarded-For: 10.157.1.2 10.157.1.3"
+  Client real ip: 10.157.1.2
+
+  # 可以看到，real_ip_recursive off 关闭后，只是简单的取最后一个的。
+  [root@zhaojiedi-elk-2 nginx]# curl http://n-realip.linuxpanda.tech -H "X-Forwarded-For: 1.1.1.1 2.2.2.2 3.3.3.3 10.157.1.2 10.157.1.3"
+  Client real ip: 10.157.1.3
+
+
+
+如果拿到用户的ip如何使用
+------------------------------------
+nginx中可以通过变量访问到用户的真实ip地址。 remote_addr就是用户的ip地址。 有了这个用户ip可以做些限流等分流操作。
 
