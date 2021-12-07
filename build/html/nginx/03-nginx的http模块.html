@@ -61,6 +61,19 @@
 <li class="toctree-l2"><a class="reference internal" href="#rewrite-error">3.18. rewrite 行为记录error日志</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#if">3.19. if指令</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#location">3.20. location指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id9">3.21. 如何限制每个客户端的并发连接数量</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id10">3.22. 如何限制每个客户端的每秒处理请求数量</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#limit-req-limit-conn">3.23. limit_req 和limit_conn 区别</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id11">3.24. 如何限制哪些ip地址的访问权限</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#http-base-authentication">3.25. http base authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#auth-request">3.26. 统一的用户权限验证系统auth_request</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#accesssatisfy">3.27. 限制所有access阶段的satisfy指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#precontent-try-files">3.28. precontent 阶段的try_files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mirror">3.29. 实时流量mirror 模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rootalias">3.30. root和alias指令差异</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#content-type">3.31. 静态文件返回的content-type</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#index">3.32. index模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#auto-index">3.33. auto index 模块</a></li>
 </ul>
 </li>
 </ul>
@@ -578,6 +591,327 @@ curl: <span class="o">(</span><span class="m">7</span><span class="o">)</span> F
 <li><p>最长正则</p></li>
 <li><p>最长匹配前缀</p></li>
 </ul>
+</section>
+<section id="id9">
+<h2><span class="section-number">3.21. </span>如何限制每个客户端的并发连接数量<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h2>
+<p>每个请求是通过worker处理， 各个work之间怎么知道别人多少流量呢。 这个时候需要引入共享内存， 全部woker进程都是可以访问这个共享内存的。
+一般限制通过用户的ip来控制的。</p>
+<p>官方文档： <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_limit_conn_module.html">https://nginx.org/en/docs/http/ngx_http_limit_conn_module.html</a></p>
+<p>样例配置</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>limit_conn_zone $binary_remote_addr zone=addr:10m;
+limit_req_zone $binary_remote_addr zone=one:10m rate=2r/m;
+
+server {
+	listen 8084;
+	server_name n-limit.linuxpanda.tech;
+	root html/;
+	error_log logs/myerror.log info;
+	
+	location /{
+		limit_conn_status 500;
+		limit_conn_log_level  warn;
+		limit_rate 50;
+		limit_conn addr 1;
+		#limit_req zone=one burst=3 nodelay;
+		#limit_req zone=one;
+	}
+}
+</pre></div>
+</div>
+<p>验证效果</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 第一次请求，</span>
+curl http://n-limit.linuxpanda.tech:8084/
+<span class="c1"># 换个终端继续请求一次。 这次就是500了， 因为我们设置了limit_conn_status 500</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># curl http://n-limit.linuxpanda.tech:8084/</span>
+&lt;html&gt;
+&lt;head&gt;&lt;title&gt;500 Internal Server Error&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+&lt;center&gt;&lt;h1&gt;500 Internal Server Error&lt;/h1&gt;&lt;/center&gt;
+&lt;hr&gt;&lt;center&gt;openresty/1.19.9.1&lt;/center&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+<span class="c1"># 看到日志， 已经被拒绝记录日志了。</span>
+tail -f ../../logs/myerror.log
+<span class="m">2021</span>/12/07 <span class="m">15</span>:58:08 <span class="o">[</span>warn<span class="o">]</span> <span class="m">41823</span><span class="c1">#0: *24 limiting connections by zone &quot;addr&quot;, client: 10.157.89.215, server: n-limit.linuxpanda.tech, request: &quot;GET / HTTP/1.1&quot;, host: &quot;n-limit.linuxpanda.tech:8084&quot;</span>
+</pre></div>
+</div>
+<p>几个参数说明</p>
+<ul class="simple">
+<li><p>limit_conn_zone： 定义一个zone  涉及名字，key 和大小。</p></li>
+<li><p>limit_conn： 限制并发数。</p></li>
+<li><p>limit_conn_log_level： 限流的级别，</p></li>
+<li><p>limit_conn_status： 命中限流的指定状态码，默认是503的。</p></li>
+</ul>
+</section>
+<section id="id10">
+<h2><span class="section-number">3.22. </span>如何限制每个客户端的每秒处理请求数量<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h2>
+<p>官方文档： <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_limit_req_module.html">https://nginx.org/en/docs/http/ngx_http_limit_req_module.html</a></p>
+<p>几个参数说明</p>
+<ul class="simple">
+<li><p>limit_req_zone： 定义一个zone  涉及名字，key 和限制速率。</p></li>
+<li><p>limit_req： 限制并发数，burst=0默认 nodelay将直接返回不仅进入池子。</p></li>
+<li><p>limit_req_log_level： 限流的级别，</p></li>
+<li><p>limit_req_status： 命中限流的指定状态码，默认是503的。</p></li>
+</ul>
+</section>
+<section id="limit-req-limit-conn">
+<h2><span class="section-number">3.23. </span>limit_req 和limit_conn 区别<a class="headerlink" href="#limit-req-limit-conn" title="Permalink to this headline"></a></h2>
+<p>这个主要涉及conn和req的区别了， conn是表示一个连接， 三次捂手四次断开， 中间是可以发送多个req的。</p>
+<p>发了多个请求但是conn还是1的。</p>
+<p>所有连接限制limit_conn ，请求限制limit_req .</p>
+</section>
+<section id="id11">
+<h2><span class="section-number">3.24. </span>如何限制哪些ip地址的访问权限<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h2>
+<p>有时候我们只希望特定的接口只能被内网访问，或者特定的来源ip访问，其他的访问都要拒绝怎么办？</p>
+<p>官方文档： <a class="reference external" href="https://nginx.org/en/docs/stream/ngx_stream_access_module.html">https://nginx.org/en/docs/stream/ngx_stream_access_module.html</a></p>
+<p>access模块提供allow deny 命令来控制访问的。</p>
+<p>样例配置</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8084;
+	server_name n-access.linuxpanda.tech;
+	root html/;
+	location /{
+		
+	}
+	location /monitor {
+		allow 10.21.0.0/16; 
+		deny all ;
+		#return 200 &quot;monitor&quot; ;
+	}
+}
+</pre></div>
+</div>
+<p>验证</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 10.157访问就是403的。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-access.linuxpanda.tech:8084/monitor</span>
+&lt;html&gt;
+&lt;head&gt;&lt;title&gt;403 Forbidden&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+&lt;center&gt;&lt;h1&gt;403 Forbidden&lt;/h1&gt;&lt;/center&gt;
+&lt;hr&gt;&lt;center&gt;openresty/1.19.9.1&lt;/center&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+
+<span class="c1"># 10.21网段机器验证下</span>
+<span class="o">[</span>zhaojiedi_dxm@instance-yzjf9ek0-07 ~<span class="o">]</span>$ curl http://n-access.linuxpanda.tech:8084/monitor -L
+monitor.index
+</pre></div>
+</div>
+</section>
+<section id="http-base-authentication">
+<h2><span class="section-number">3.25. </span>http base authentication<a class="headerlink" href="#http-base-authentication" title="Permalink to this headline"></a></h2>
+<p>auth_basic 设置了认证的， 只有通过输入用户名和密码，校验正确才可以放到到后面的真实内容。</p>
+<p>官方文档： <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_auth_basic_module.html">https://nginx.org/en/docs/http/ngx_http_auth_basic_module.html</a></p>
+<p>主要指令说明</p>
+<ul class="simple">
+<li><p>auth_basic： 这个是弹出一个认证页面的时候，上面的title信息。</p></li>
+<li><p>auth_basic_user_file ： 指定一个密码文件， 用于核对用户的登录信息的。</p></li>
+</ul>
+<p>这里说明下如何创建一个密码文件。</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>yum install httpd-tools
+<span class="o">[</span>root@zhaojiedi-elk-2 yum.repos.d<span class="o">]</span><span class="c1"># htpasswd -b  -c /root/openresty/nginx/conf/sites/passwd panda panda</span>
+Adding password <span class="k">for</span> user panda
+<span class="o">[</span>root@zhaojiedi-elk-2 yum.repos.d<span class="o">]</span><span class="c1"># cat /root/openresty/nginx/conf/sites/passwd</span>
+panda:<span class="nv">$apr1$uG5p</span>/wXQ<span class="nv">$ZVip2iJlcBIgcQCS9Z48o0</span>
+<span class="c1"># 第二种生成方式</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 yum.repos.d<span class="o">]</span><span class="c1"># openssl passwd -apr1 -salt uG5p</span>
+Password:
+<span class="nv">$apr1$uG5p$HmDGUeTQSY</span>/vpUKghwght1
+</pre></div>
+</div>
+<p>配置如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8084;
+	server_name n-access.linuxpanda.tech;
+	root html/;
+	location /{
+		auth_basic &quot;what ?&quot; ;
+		auth_basic_user_file conf/passwd ;
+	}
+}
+</pre></div>
+</div>
+<p>验证效果</p>
+<img alt="../_images/nginx19.png" src="../_images/nginx19.png" />
+</section>
+<section id="auth-request">
+<h2><span class="section-number">3.26. </span>统一的用户权限验证系统auth_request<a class="headerlink" href="#auth-request" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>auth_request对应的路由返回401 or 403时，会拦截请求直接nginx返回前台401 or 403信息；</p></li>
+<li><p>auth_request对应的路由返回2xx状态码时，不会拦截请求，而是构建一个subrequest请求再去请求真实受保护资源的接口；</p></li>
+</ul>
+<p>auth_request模式没有编译进入nginx的。</p>
+<p>样例配置如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>upstream web1 {
+	server 192.168.20.131:3000;
+}
+
+upstream web2 {
+	server 192.168.20.131:3001;
+}
+
+server {
+	listen 8084;
+	server_name n-access.linuxpanda.tech;
+
+    location /api/web1 {
+        auth_request /auth;
+	    error_page 401 = @error401;
+	    auth_request_set $user $upstream_http_x_forwarded_user;
+	    proxy_set_header X-Forwarded-User $user;
+	    proxy_pass http://web1;
+    }
+    location /api/web2 {
+        auth_request /auth;
+        error_page 401 = @error401;
+        auth_request_set $user $upstream_http_x_forwarded_user;
+        proxy_set_header X-Forwarded-User $user;
+        proxy_pass http://web2;
+    }
+
+    location /auth {
+	    internal;
+	    proxy_set_header Host $host;
+	    proxy_pass_request_body off;
+	    proxy_set_header Content-Length &quot;&quot;;
+	    proxy_pass http://192.168.20.131:7001/auth;
+    }
+    location @error401 {
+	    add_header Set-Cookie &quot;NSREDIRECT=$scheme://$http_host$request_uri;Path=/&quot;;
+	    return 302 http://192.168.20.131:7001/login;
+    }
+}
+</pre></div>
+</div>
+</section>
+<section id="accesssatisfy">
+<h2><span class="section-number">3.27. </span>限制所有access阶段的satisfy指令<a class="headerlink" href="#accesssatisfy" title="Permalink to this headline"></a></h2>
+<p>上面我有有allow deny 控制ip来源， 还有auth提供用户名和密码的， 还有统一认证等。 是所有都通过放行，还是一个满足就可以放行了呢。
+通过satisfy指令即可实现。</p>
+<img alt="../_images/nginx20.png" src="../_images/nginx20.png" />
+<p>这个条件判定如果一个判定能决定结果的话，后续的判定就不做了。</p>
+<ul class="simple">
+<li><p>access</p></li>
+<li><p>auth_basic</p></li>
+<li><p>auth_request</p></li>
+</ul>
+</section>
+<section id="precontent-try-files">
+<h2><span class="section-number">3.28. </span>precontent 阶段的try_files<a class="headerlink" href="#precontent-try-files" title="Permalink to this headline"></a></h2>
+<p>依次访问多个url对应的文件，那就存着的时候直接返回内容，如果不存在则按照最后一个url响应。</p>
+<p>一个样例
+.. code-block:: bash</p>
+<blockquote>
+<div><dl class="simple">
+<dt>try_files /system/maintenance.html</dt><dd><p>$uri $uri/index.html $uri.html
+&#64;mongrel;</p>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+<section id="mirror">
+<h2><span class="section-number">3.29. </span>实时流量mirror 模块<a class="headerlink" href="#mirror" title="Permalink to this headline"></a></h2>
+<p>处理请求时候，生成子请求访问其他服务，对子请求的返回值不做处理。
+通过mirror uri 方式将流量转发给一个uri 。</p>
+</section>
+<section id="rootalias">
+<h2><span class="section-number">3.30. </span>root和alias指令差异<a class="headerlink" href="#rootalias" title="Permalink to this headline"></a></h2>
+<p>root会将完成url映射近文件路径中，alias只会讲location后的url映射到文件路径中。</p>
+<p>样例配置如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8084;
+	server_name n-alias.linuxpanda.tech;
+
+	location /root {
+		root html ;
+	}	
+	location /alias {
+		alias html;
+	}
+	
+	location ~ /root/(\w+\.txt) {
+		root html/first/$1;
+	}
+
+	location ~ /alias/(\w+\.txt) {
+		alias html/first/$1;
+	}
+}
+</pre></div>
+</div>
+<p>测试效果</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 可以看到这个请求命中了第一个location了， 实际找的文件是   nginx基础目录/root/openresty/nginx + root指定位置html + 请求的路径/root</span>
+curl http://n-alias.linuxpanda.tech:8084/root
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># tail -n1 ../logs/access.log</span>
+<span class="m">10</span>.157.89.215 - - <span class="o">[</span><span class="m">07</span>/Dec/2021:19:24:24 +0800<span class="o">]</span> <span class="s2">&quot;GET /root HTTP/1.1&quot;</span> <span class="m">404</span> <span class="m">159</span> <span class="s2">&quot;-&quot;</span> <span class="s2">&quot;curl/7.29.0&quot;</span> <span class="s2">&quot;-&quot;</span><span class="nv">request_filename</span><span class="o">=</span>/root/openresty/nginx/html/root <span class="nv">document_root</span><span class="o">=</span>/root/openresty/nginx/html <span class="nv">realpath_root</span><span class="o">=</span>/root/openresty/nginx/html
+
+<span class="c1">#实际找的文件是   nginx基础目录/root/openresty/nginx + root指定位置html/first/1.txt + 请求的路径/root/1.txt</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-alias.linuxpanda.tech:8084/root/1.txt</span>
+&lt;html&gt;
+&lt;head&gt;&lt;title&gt;404 Not Found&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+&lt;center&gt;&lt;h1&gt;404 Not Found&lt;/h1&gt;&lt;/center&gt;
+&lt;hr&gt;&lt;center&gt;openresty/1.19.9.1&lt;/center&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># tail -n1 ../logs/access.log</span>
+t/openresty/nginx/html/first/1.txt
+
+<span class="c1"># 命中了第二个location 访问的路径其实是 nginx基础目录/root/openresty/nginx + alias执行路径 html</span>
+curl http://n-alias.linuxpanda.tech:8084/alias
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># tail -n 1 logs/access.log</span>
+<span class="m">10</span>.157.89.215 - - <span class="o">[</span><span class="m">07</span>/Dec/2021:20:27:20 +0800<span class="o">]</span> <span class="s2">&quot;GET /alias HTTP/1.1&quot;</span> <span class="m">301</span> <span class="m">175</span> <span class="s2">&quot;-&quot;</span> <span class="s2">&quot;curl/7.29.0&quot;</span> <span class="s2">&quot;-&quot;</span><span class="nv">request_filename</span><span class="o">=</span>/root/openresty/nginx/html <span class="nv">document_root</span><span class="o">=</span>/root/openresty/nginx/html <span class="nv">realpath_root</span><span class="o">=</span>/root/openresty/nginx/html
+
+<span class="c1"># nginx基础目录/root/openresty/nginx + alias执行路径 html/first/a.txt</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-alias.linuxpanda.tech:8084/alias/a.txt</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># tail -n 1 logs/access.log</span>
+<span class="m">10</span>.157.89.215 - - <span class="o">[</span><span class="m">07</span>/Dec/2021:20:31:01 +0800<span class="o">]</span> <span class="s2">&quot;GET /alias/a.txt HTTP/1.1&quot;</span> <span class="m">404</span> <span class="m">159</span> <span class="s2">&quot;-&quot;</span> <span class="s2">&quot;curl/7.29.0&quot;</span> <span class="s2">&quot;-&quot;</span><span class="nv">request_filename</span><span class="o">=</span>/root/openresty/nginx/html/first/a.txt <span class="nv">document_root</span><span class="o">=</span>/root/openresty/nginx/html/first/a.txt <span class="nv">realpath_root</span><span class="o">=</span>-
+</pre></div>
+</div>
+<p>综合上面的实现发现， alias和root主要是针对的请求的uri部分是否追加到原来的访问路径上面的， alias不追加， 但是root是追加的。</p>
+<p>额外几个变量的含义</p>
+<ul class="simple">
+<li><p>request_filename: 带访问文件的完整的路径</p></li>
+<li><p>document_root: 对应的访问根</p></li>
+<li><p>realpath_root: 软连接换成真实路径。</p></li>
+</ul>
+</section>
+<section id="content-type">
+<h2><span class="section-number">3.31. </span>静态文件返回的content-type<a class="headerlink" href="#content-type" title="Permalink to this headline"></a></h2>
+<p>default_type 指定默认的响应类型。 log_not_found on 这是默认值， 会在访问文件不存在的时候打印对应的错误日志，可以关闭。但是不建议。</p>
+</section>
+<section id="index">
+<h2><span class="section-number">3.32. </span>index模块<a class="headerlink" href="#index" title="Permalink to this headline"></a></h2>
+<p>index 模块提供指定访问目录时候的默认请求文件。 默认值是index.html</p>
+</section>
+<section id="auto-index">
+<h2><span class="section-number">3.33. </span>auto index 模块<a class="headerlink" href="#auto-index" title="Permalink to this headline"></a></h2>
+<p>访问一个url的时候，通过html或者其他类型返回对应目录的目录的结构信息。</p>
+<p>几个主要参数含义：</p>
+<ul class="simple">
+<li><p>autoindex : 开启auto index</p></li>
+<li><p>autoindex_exact_size:  展示精确大小，off展示人性化格式。</p></li>
+<li><p>autoindex_format: 响应格式，默认是html的格式的。</p></li>
+<li><p>autoindex_localtime: 日期的本地时间。</p></li>
+</ul>
+<p>样例配置如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server{
+	listen 8084; 
+	server_name n-autoindex.linuxpanda.tech;
+	
+	location / {
+		alias html/ ; 
+		autoindex on ; 
+		autoindex_exact_size off ; 
+		autoindex_format xml; 
+	}
+}
+</pre></div>
+</div>
+<p>设置为html的效果</p>
+<img alt="../_images/nginx21.png" src="../_images/nginx21.png" />
+<p>设置为xml的效果</p>
+<img alt="../_images/nginx22.png" src="../_images/nginx22.png" />
 </section>
 </section>
 

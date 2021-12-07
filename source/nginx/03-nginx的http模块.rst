@@ -473,5 +473,266 @@ location指令
 - 最长匹配前缀
   
 
+如何限制每个客户端的并发连接数量
+------------------------------------
+每个请求是通过worker处理， 各个work之间怎么知道别人多少流量呢。 这个时候需要引入共享内存， 全部woker进程都是可以访问这个共享内存的。
+一般限制通过用户的ip来控制的。 
 
 
+官方文档： https://nginx.org/en/docs/http/ngx_http_limit_conn_module.html
+
+样例配置
+
+
+.. literalinclude:: ../files/limit.conf
+   :encoding: utf-8
+   :language: text 
+
+
+验证效果
+
+.. code-block:: bash 
+
+  # 第一次请求，
+  curl http://n-limit.linuxpanda.tech:8084/
+  # 换个终端继续请求一次。 这次就是500了， 因为我们设置了limit_conn_status 500
+  [root@zhaojiedi-elk-2 sites]# curl http://n-limit.linuxpanda.tech:8084/
+  <html>
+  <head><title>500 Internal Server Error</title></head>
+  <body>
+  <center><h1>500 Internal Server Error</h1></center>
+  <hr><center>openresty/1.19.9.1</center>
+  </body>
+  </html>
+  # 看到日志， 已经被拒绝记录日志了。 
+  tail -f ../../logs/myerror.log
+  2021/12/07 15:58:08 [warn] 41823#0: *24 limiting connections by zone "addr", client: 10.157.89.215, server: n-limit.linuxpanda.tech, request: "GET / HTTP/1.1", host: "n-limit.linuxpanda.tech:8084"
+
+几个参数说明
+
+- limit_conn_zone： 定义一个zone  涉及名字，key 和大小。
+- limit_conn： 限制并发数。
+- limit_conn_log_level： 限流的级别，
+- limit_conn_status： 命中限流的指定状态码，默认是503的。
+
+
+如何限制每个客户端的每秒处理请求数量
+------------------------------------
+
+官方文档： https://nginx.org/en/docs/http/ngx_http_limit_req_module.html
+
+几个参数说明
+
+- limit_req_zone： 定义一个zone  涉及名字，key 和限制速率。
+- limit_req： 限制并发数，burst=0默认 nodelay将直接返回不仅进入池子。
+- limit_req_log_level： 限流的级别，
+- limit_req_status： 命中限流的指定状态码，默认是503的。
+
+limit_req 和limit_conn 区别
+------------------------------------
+
+这个主要涉及conn和req的区别了， conn是表示一个连接， 三次捂手四次断开， 中间是可以发送多个req的。 
+
+发了多个请求但是conn还是1的。 
+
+所有连接限制limit_conn ，请求限制limit_req . 
+
+
+如何限制哪些ip地址的访问权限
+------------------------------------
+有时候我们只希望特定的接口只能被内网访问，或者特定的来源ip访问，其他的访问都要拒绝怎么办？ 
+
+官方文档： https://nginx.org/en/docs/stream/ngx_stream_access_module.html
+
+access模块提供allow deny 命令来控制访问的。 
+
+样例配置
+
+.. literalinclude:: ../files/access.conf
+   :encoding: utf-8
+   :language: text 
+
+
+验证
+
+.. code-block:: bash 
+
+  # 10.157访问就是403的。
+  [root@zhaojiedi-elk-2 conf]# curl http://n-access.linuxpanda.tech:8084/monitor
+  <html>
+  <head><title>403 Forbidden</title></head>
+  <body>
+  <center><h1>403 Forbidden</h1></center>
+  <hr><center>openresty/1.19.9.1</center>
+  </body>
+  </html>
+
+  # 10.21网段机器验证下
+  [zhaojiedi_dxm@instance-yzjf9ek0-07 ~]$ curl http://n-access.linuxpanda.tech:8084/monitor -L
+  monitor.index
+
+http base authentication 
+------------------------------------
+auth_basic 设置了认证的， 只有通过输入用户名和密码，校验正确才可以放到到后面的真实内容。
+
+官方文档： https://nginx.org/en/docs/http/ngx_http_auth_basic_module.html
+
+主要指令说明
+
+- auth_basic： 这个是弹出一个认证页面的时候，上面的title信息。
+- auth_basic_user_file ： 指定一个密码文件， 用于核对用户的登录信息的。 
+
+这里说明下如何创建一个密码文件。
+
+.. code-block:: bash 
+
+  yum install httpd-tools
+  [root@zhaojiedi-elk-2 yum.repos.d]# htpasswd -b  -c /root/openresty/nginx/conf/sites/passwd panda panda
+  Adding password for user panda
+  [root@zhaojiedi-elk-2 yum.repos.d]# cat /root/openresty/nginx/conf/sites/passwd
+  panda:$apr1$uG5p/wXQ$ZVip2iJlcBIgcQCS9Z48o0
+  # 第二种生成方式
+  [root@zhaojiedi-elk-2 yum.repos.d]# openssl passwd -apr1 -salt uG5p
+  Password:
+  $apr1$uG5p$HmDGUeTQSY/vpUKghwght1
+
+配置如下
+
+.. literalinclude:: ../files/access2.conf
+   :encoding: utf-8
+   :language: text 
+
+验证效果
+
+.. image:: ../images/nginx19.png
+
+统一的用户权限验证系统auth_request
+------------------------------------
+
+- auth_request对应的路由返回401 or 403时，会拦截请求直接nginx返回前台401 or 403信息；
+- auth_request对应的路由返回2xx状态码时，不会拦截请求，而是构建一个subrequest请求再去请求真实受保护资源的接口；
+  
+auth_request模式没有编译进入nginx的。 
+
+
+样例配置如下
+
+.. literalinclude:: ../files/auth_request.conf
+   :encoding: utf-8
+   :language: text 
+
+
+限制所有access阶段的satisfy指令
+------------------------------------
+
+上面我有有allow deny 控制ip来源， 还有auth提供用户名和密码的， 还有统一认证等。 是所有都通过放行，还是一个满足就可以放行了呢。 
+通过satisfy指令即可实现。
+
+.. image:: ../images/nginx20.png
+
+这个条件判定如果一个判定能决定结果的话，后续的判定就不做了。 
+
+- access
+- auth_basic
+- auth_request 
+
+precontent 阶段的try_files 
+------------------------------------
+依次访问多个url对应的文件，那就存着的时候直接返回内容，如果不存在则按照最后一个url响应。
+
+一个样例
+.. code-block:: bash 
+
+  try_files /system/maintenance.html
+                $uri $uri/index.html $uri.html
+                @mongrel;
+
+实时流量mirror 模块
+------------------------------------
+处理请求时候，生成子请求访问其他服务，对子请求的返回值不做处理。 
+通过mirror uri 方式将流量转发给一个uri 。
+
+root和alias指令差异
+------------------------------------
+root会将完成url映射近文件路径中，alias只会讲location后的url映射到文件路径中。
+
+样例配置如下
+
+.. literalinclude:: ../files/alias.conf
+   :encoding: utf-8
+   :language: text 
+
+测试效果
+
+.. code-block:: bash
+
+  # 可以看到这个请求命中了第一个location了， 实际找的文件是   nginx基础目录/root/openresty/nginx + root指定位置html + 请求的路径/root 
+  curl http://n-alias.linuxpanda.tech:8084/root
+  [root@zhaojiedi-elk-2 conf]# tail -n1 ../logs/access.log
+  10.157.89.215 - - [07/Dec/2021:19:24:24 +0800] "GET /root HTTP/1.1" 404 159 "-" "curl/7.29.0" "-"request_filename=/root/openresty/nginx/html/root document_root=/root/openresty/nginx/html realpath_root=/root/openresty/nginx/html
+
+  #实际找的文件是   nginx基础目录/root/openresty/nginx + root指定位置html/first/1.txt + 请求的路径/root/1.txt
+  [root@zhaojiedi-elk-2 conf]# curl http://n-alias.linuxpanda.tech:8084/root/1.txt
+  <html>
+  <head><title>404 Not Found</title></head>
+  <body>
+  <center><h1>404 Not Found</h1></center>
+  <hr><center>openresty/1.19.9.1</center>
+  </body>
+  </html>
+  [root@zhaojiedi-elk-2 conf]# tail -n1 ../logs/access.log
+  t/openresty/nginx/html/first/1.txt
+
+  # 命中了第二个location 访问的路径其实是 nginx基础目录/root/openresty/nginx + alias执行路径 html 
+  curl http://n-alias.linuxpanda.tech:8084/alias 
+  [root@zhaojiedi-elk-2 nginx]# tail -n 1 logs/access.log
+  10.157.89.215 - - [07/Dec/2021:20:27:20 +0800] "GET /alias HTTP/1.1" 301 175 "-" "curl/7.29.0" "-"request_filename=/root/openresty/nginx/html document_root=/root/openresty/nginx/html realpath_root=/root/openresty/nginx/html
+
+  # nginx基础目录/root/openresty/nginx + alias执行路径 html/first/a.txt  
+  [root@zhaojiedi-elk-2 nginx]# curl http://n-alias.linuxpanda.tech:8084/alias/a.txt
+  [root@zhaojiedi-elk-2 nginx]# tail -n 1 logs/access.log
+  10.157.89.215 - - [07/Dec/2021:20:31:01 +0800] "GET /alias/a.txt HTTP/1.1" 404 159 "-" "curl/7.29.0" "-"request_filename=/root/openresty/nginx/html/first/a.txt document_root=/root/openresty/nginx/html/first/a.txt realpath_root=-
+
+
+综合上面的实现发现， alias和root主要是针对的请求的uri部分是否追加到原来的访问路径上面的， alias不追加， 但是root是追加的。 
+
+
+额外几个变量的含义
+
+- request_filename: 带访问文件的完整的路径
+- document_root: 对应的访问根
+- realpath_root: 软连接换成真实路径。
+
+静态文件返回的content-type 
+------------------------------------
+
+default_type 指定默认的响应类型。 log_not_found on 这是默认值， 会在访问文件不存在的时候打印对应的错误日志，可以关闭。但是不建议。
+
+index模块
+------------------------------------
+index 模块提供指定访问目录时候的默认请求文件。 默认值是index.html 
+
+auto index 模块
+------------------------------------
+访问一个url的时候，通过html或者其他类型返回对应目录的目录的结构信息。
+
+几个主要参数含义： 
+
+- autoindex : 开启auto index 
+- autoindex_exact_size:  展示精确大小，off展示人性化格式。
+- autoindex_format: 响应格式，默认是html的格式的。 
+- autoindex_localtime: 日期的本地时间。
+
+样例配置如下
+
+.. literalinclude:: ../files/autoindex.conf
+   :encoding: utf-8
+   :language: text 
+
+设置为html的效果
+
+.. image:: ../images/nginx21.png 
+
+设置为xml的效果
+
+.. image:: ../images/nginx22.png 
