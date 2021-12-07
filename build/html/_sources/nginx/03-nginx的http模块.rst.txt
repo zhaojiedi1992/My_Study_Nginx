@@ -312,6 +312,7 @@ rewrite指令
 - permanent 返回301 。
 
 先准备下环境
+
 .. code-block:: bash 
 
   [root@zhaojiedi-elk-2 sites]# mkdir ../../html/{first,second,third}
@@ -328,6 +329,7 @@ rewrite指令
   │   └── 2.txt
   └── third
       └── 3.txt
+
 
 对应配置如下
 

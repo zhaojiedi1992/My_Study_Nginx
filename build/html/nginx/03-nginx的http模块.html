@@ -391,26 +391,23 @@ error_page 404=301 http://www.linuxpanda.tech/notfound.html;
 <li><p>redirect 返回302 。</p></li>
 <li><p>permanent 返回301 。</p></li>
 </ul>
-<p>先准备下环境
-.. code-block:: bash</p>
-<blockquote>
-<div><p>[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> sites]# mkdir ../../html/{first,second,third}
-[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> sites]# echo “1” &gt;&gt; ../../html/first/1.txt
-[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> sites]# echo “2” &gt;&gt; ../../html/second/2.txt
-[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> sites]# echo “3” &gt;&gt; ../../html/third/3.txt
-[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> sites]# tree ../../html/
+<p>先准备下环境</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># mkdir ../../html/{first,second,third}</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># echo &quot;1&quot; &gt;&gt; ../../html/first/1.txt</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># echo &quot;2&quot; &gt;&gt; ../../html/second/2.txt</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># echo &quot;3&quot; &gt;&gt; ../../html/third/3.txt</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># tree ../../html/</span>
 ../../html/
 ├── 50x.html
 ├── first
-│   └── 1.txt
+│   └── <span class="m">1</span>.txt
 ├── index.html
 ├── second
-│   └── 2.txt
-└── third</p>
-<blockquote>
-<div><p>└── 3.txt</p>
-</div></blockquote>
-</div></blockquote>
+│   └── <span class="m">2</span>.txt
+└── third
+    └── <span class="m">3</span>.txt
+</pre></div>
+</div>
 <p>对应配置如下</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
 	listen 8084 ;
