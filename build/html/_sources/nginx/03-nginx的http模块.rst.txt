@@ -261,6 +261,7 @@ return 指令
 
 
 通过验证我们知道， 
+
 - server种的return指令是高于location的， 和配置前后无关系的。
 - return就是直接返回了， 不会在经过errpage这些处理的。 
 
@@ -273,17 +274,17 @@ error_page 用于给特定code的展示一个特定的错误页面。 url可以�
 几种样例配置
 
 .. code-block:: text 
-  
+
   # 这种方式，会引发内部的重定向，请求对应的页面， 方法为get， 而不是请求的原始方法。
   error_page 404 /404.html; 
   error_page 500 502 503 504 /5xx.html ;
-  
+
   # 使用 = 方式，可以改变响应码的。
   error_page 404 =200 /empty.gif;
-  
+
   # 这个没有指定200 ，那就是跟进/404.php的返回码来定。
   error_page 404 = /404.php; 
-  
+
   # 下面的这个部分就是将404请求，转发给后端backend来响应
   location / { 
       error_page 404 =@fallback; 
@@ -291,8 +292,184 @@ error_page 用于给特定code的展示一个特定的错误页面。 url可以�
   location @fallback {
     proxy_pass http://backend ; 
   }
-  
+
   # 使用url的方式， 默认是响应码是302的， 当然可以指定其他的 301， 302 303 307 308  只能这几个。 第二个404=301 就是指定方式。
   error_page 403 http://www.linuxpanda.tech/forbidden.html;
   error_page 404=301 http://www.linuxpanda.tech/notfound.html; 
+
+
+rewrite指令
+------------------------------------
+这个指令的功能是将指定的url替换为新的url。  支持正则表达式提取的。
+
+当replacement以http:// 或者https://或者$schema开头， 则直接返回302重定向。
+
+替换后的url跟进flag指定的方式进行处理。
+
+- last 这个url接下来使用新的location进行匹配。 
+- break 停止执行。
+- redirect 返回302 。 
+- permanent 返回301 。
+
+先准备下环境
+.. code-block:: bash 
+
+  [root@zhaojiedi-elk-2 sites]# mkdir ../../html/{first,second,third}
+  [root@zhaojiedi-elk-2 sites]# echo "1" >> ../../html/first/1.txt
+  [root@zhaojiedi-elk-2 sites]# echo "2" >> ../../html/second/2.txt
+  [root@zhaojiedi-elk-2 sites]# echo "3" >> ../../html/third/3.txt
+  [root@zhaojiedi-elk-2 sites]# tree ../../html/
+  ../../html/
+  ├── 50x.html
+  ├── first
+  │   └── 1.txt
+  ├── index.html
+  ├── second
+  │   └── 2.txt
+  └── third
+      └── 3.txt
+
+对应配置如下
+
+.. literalinclude:: ../files/rewrite.conf
+   :encoding: utf-8
+   :language: text 
+
+
+验证结果
+
+.. code-block:: bash 
+
+  # 可以看到这个url直接命中了location片段， 就return了。
+  [root@zhaojiedi-elk-2 sites]# curl http://n-rewrite.linuxpanda.tech:8084/third/3.txt
+  third!
+
+  # 访问这个url命中了/second的location， 然后被break了， 后面return没有机会执行了， 然后直接content了， html/3.txt进行相应了。 
+  [root@zhaojiedi-elk-2 sites]# curl http://n-rewrite.linuxpanda.tech:8084/second/3.txt
+  3
+  # 使用last会继续进行location的， 然后走第二个，然后和上面的案例一样了。 
+  [root@zhaojiedi-elk-2 sites]# curl http://n-rewrite.linuxpanda.tech:8084/first/3.txt
+  3
+
+  # 然后进行调整rewrite和return的顺序， 在进行测试
+
+  [root@zhaojiedi-elk-2 sites]# curl http://n-rewrite.linuxpanda.tech:8084/first/3.txt
+  first!
+
+  # 测试第一个重定向。
+  [root@zhaojiedi-elk-2 sites]# curl http://n-rewrite.linuxpanda.tech:8084/redirect1/1.txt -IL
+  HTTP/1.1 301 Moved Permanently
+  Server: openresty/1.19.9.1
+  Date: Tue, 07 Dec 2021 04:45:17 GMT
+  Content-Type: text/html
+  Content-Length: 175
+  Location: http://n-rewrite.linuxpanda.tech:8084/1.txt
+  Connection: keep-alive
+
+  HTTP/1.1 404 Not Found
+  Server: openresty/1.19.9.1
+  Date: Tue, 07 Dec 2021 04:45:17 GMT
+  Content-Type: text/html
+  Content-Length: 159
+  Connection: keep-alive
+
+  [root@zhaojiedi-elk-2 sites]# curl http://n-rewrite.linuxpanda.tech:8084/redirect2/2.txt -IL
+  HTTP/1.1 302 Moved Temporarily
+  Server: openresty/1.19.9.1
+  Date: Tue, 07 Dec 2021 04:45:59 GMT
+  Content-Type: text/html
+  Content-Length: 151
+  Location: http://n-rewrite.linuxpanda.tech:8084/2.txt
+  Connection: keep-alive
+
+  HTTP/1.1 404 Not Found
+  Server: openresty/1.19.9.1
+  Date: Tue, 07 Dec 2021 04:45:59 GMT
+  Content-Type: text/html
+  Content-Length: 159
+  Connection: keep-alive
+
+  # 测试重定向一个url的。默认是302临时重定向的。
+  [root@zhaojiedi-elk-2 sites]# curl http://n-rewrite.linuxpanda.tech:8084/redirect3/3.txt -IL
+  HTTP/1.1 302 Moved Temporarily
+  Server: openresty/1.19.9.1
+  Date: Tue, 07 Dec 2021 04:46:35 GMT
+  Content-Type: text/html
+  Content-Length: 151
+  Connection: keep-alive
+  Location: http://n-rewrite.linuxpanda.tech/3.txt
+
+  curl: (7) Failed connect to n-rewrite.linuxpanda.tech:80; Connection refused
+
+  # 重定向4 
+  [root@zhaojiedi-elk-2 sites]# curl http://n-rewrite.linuxpanda.tech:8084/redirect4/4.txt -IL
+  HTTP/1.1 301 Moved Permanently
+  Server: openresty/1.19.9.1
+  Date: Tue, 07 Dec 2021 04:47:40 GMT
+  Content-Type: text/html
+  Content-Length: 175
+  Connection: keep-alive
+  Location: http://n-rewrite.linuxpanda.tech/4.txt
+
+  curl: (7) Failed connect to n-rewrite.linuxpanda.tech:80; Connection refused
+
+
+可以看出： 
+
+- rewrite 和return的指令优先级基本一致， 谁在前谁先生效。
+- permanent 是301， last这是302的，默认也是302的重定向。
+- break这个会跳过执行，然后执行content阶段的。
+- last这个会继续回头进行匹配location的。  内部重定向的，
+
+rewrite 行为记录error日志
+------------------------------------
+通过rewrite_log on即可启用的， 
+
+
+if指令
+------------------------------------
+if指令使用在server或者location中的。 
+
+.. code-block:: bash 
+
+  # 匹配ie浏览器
+  if ($http_user_agent ~ MSIE) {
+      rewrite ^(.*)$ /msie/$1 break;
+  }
+
+  # 提取cooke部分作为变量
+  if ($http_cookie ~* "id=([^;]+)(?:;|$)") {
+      set $id $1;
+  }
+
+  # 判定请求方法
+  if ($request_method = POST) {
+      return 405;
+  }
+
+  # 判定变量，进行速度限制
+  if ($slow) {
+      limit_rate 10k;
+  }
+
+  # 无效refer 给返回403 
+  if ($invalid_referer) {
+      return 403;
+  }
+
+
+location指令
+------------------------------------
+
+官方参考： https://nginx.org/en/docs/http/ngx_http_core_module.html#location
+
+.. image:: ../images/nginx18.png
+
+- 精确匹配优先
+- ^~禁用正则次之
+- 最长正则
+- 最长匹配前缀
   
+
+
+

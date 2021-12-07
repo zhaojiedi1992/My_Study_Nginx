@@ -57,6 +57,10 @@
 <li class="toctree-l2"><a class="reference internal" href="#return">3.14. return 指令</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#return-errorpage">3.15. 验证return errorpage优先级</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#error-page">3.16. error_page</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rewrite">3.17. rewrite指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#rewrite-error">3.18. rewrite 行为记录error日志</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#if">3.19. if指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#location">3.20. location指令</a></li>
 </ul>
 </li>
 </ul>
@@ -341,9 +345,11 @@ Content-Length: 163
 Connection: keep-alive
 </pre></div>
 </div>
-<p>通过验证我们知道，
-- server种的return指令是高于location的， 和配置前后无关系的。
-- return就是直接返回了， 不会在经过errpage这些处理的。</p>
+<p>通过验证我们知道，</p>
+<ul class="simple">
+<li><p>server种的return指令是高于location的， 和配置前后无关系的。</p></li>
+<li><p>return就是直接返回了， 不会在经过errpage这些处理的。</p></li>
+</ul>
 </section>
 <section id="error-page">
 <h2><span class="section-number">3.16. </span>error_page<a class="headerlink" href="#error-page" title="Permalink to this headline"></a></h2>
@@ -373,6 +379,208 @@ error_page 403 http://www.linuxpanda.tech/forbidden.html;
 error_page 404=301 http://www.linuxpanda.tech/notfound.html;
 </pre></div>
 </div>
+</section>
+<section id="rewrite">
+<h2><span class="section-number">3.17. </span>rewrite指令<a class="headerlink" href="#rewrite" title="Permalink to this headline"></a></h2>
+<p>这个指令的功能是将指定的url替换为新的url。  支持正则表达式提取的。</p>
+<p>当replacement以http:// 或者https://或者$schema开头， 则直接返回302重定向。</p>
+<p>替换后的url跟进flag指定的方式进行处理。</p>
+<ul class="simple">
+<li><p>last 这个url接下来使用新的location进行匹配。</p></li>
+<li><p>break 停止执行。</p></li>
+<li><p>redirect 返回302 。</p></li>
+<li><p>permanent 返回301 。</p></li>
+</ul>
+<p>先准备下环境
+.. code-block:: bash</p>
+<blockquote>
+<div><p>[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> sites]# mkdir ../../html/{first,second,third}
+[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> sites]# echo “1” &gt;&gt; ../../html/first/1.txt
+[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> sites]# echo “2” &gt;&gt; ../../html/second/2.txt
+[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> sites]# echo “3” &gt;&gt; ../../html/third/3.txt
+[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> sites]# tree ../../html/
+../../html/
+├── 50x.html
+├── first
+│   └── 1.txt
+├── index.html
+├── second
+│   └── 2.txt
+└── third</p>
+<blockquote>
+<div><p>└── 3.txt</p>
+</div></blockquote>
+</div></blockquote>
+<p>对应配置如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8084 ;
+	server_name n-rewrite.linuxpanda.tech;
+	rewrite_log on;
+	error_log logs/rewrite_error.log notice;
+
+	root html/;
+	location /first {
+		rewrite /first(.*) /second$1 last;
+		return 200 &#39;first!\n&#39;;
+		#rewrite /first(.*) /second$1 last;
+	}
+
+	location /second {
+		rewrite /second(.*) /third$1 break;
+		#rewrite /second(.*) /third$1;
+		return 200 &#39;second!\n&#39;;
+	}
+
+	location /third {
+		return 200 &#39;third!\n&#39;;
+	}
+
+
+	location /redirect1 {
+		rewrite /redirect1(.*) $1 permanent;
+	}
+
+	location /redirect2 {
+		rewrite /redirect2(.*) $1 redirect;
+	}
+
+	location /redirect3 {
+                rewrite /redirect3(.*) http://n-rewrite.linuxpanda.tech$1;
+        }
+
+	location /redirect4 {
+                rewrite /redirect4(.*) http://n-rewrite.linuxpanda.tech$1 permanent;
+        }
+}
+</pre></div>
+</div>
+<p>验证结果</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 可以看到这个url直接命中了location片段， 就return了。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># curl http://n-rewrite.linuxpanda.tech:8084/third/3.txt</span>
+third!
+
+<span class="c1"># 访问这个url命中了/second的location， 然后被break了， 后面return没有机会执行了， 然后直接content了， html/3.txt进行相应了。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># curl http://n-rewrite.linuxpanda.tech:8084/second/3.txt</span>
+<span class="m">3</span>
+<span class="c1"># 使用last会继续进行location的， 然后走第二个，然后和上面的案例一样了。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># curl http://n-rewrite.linuxpanda.tech:8084/first/3.txt</span>
+<span class="m">3</span>
+
+<span class="c1"># 然后进行调整rewrite和return的顺序， 在进行测试</span>
+
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># curl http://n-rewrite.linuxpanda.tech:8084/first/3.txt</span>
+first!
+
+<span class="c1"># 测试第一个重定向。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># curl http://n-rewrite.linuxpanda.tech:8084/redirect1/1.txt -IL</span>
+HTTP/1.1 <span class="m">301</span> Moved Permanently
+Server: openresty/1.19.9.1
+Date: Tue, <span class="m">07</span> Dec <span class="m">2021</span> <span class="m">04</span>:45:17 GMT
+Content-Type: text/html
+Content-Length: <span class="m">175</span>
+Location: http://n-rewrite.linuxpanda.tech:8084/1.txt
+Connection: keep-alive
+
+HTTP/1.1 <span class="m">404</span> Not Found
+Server: openresty/1.19.9.1
+Date: Tue, <span class="m">07</span> Dec <span class="m">2021</span> <span class="m">04</span>:45:17 GMT
+Content-Type: text/html
+Content-Length: <span class="m">159</span>
+Connection: keep-alive
+
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># curl http://n-rewrite.linuxpanda.tech:8084/redirect2/2.txt -IL</span>
+HTTP/1.1 <span class="m">302</span> Moved Temporarily
+Server: openresty/1.19.9.1
+Date: Tue, <span class="m">07</span> Dec <span class="m">2021</span> <span class="m">04</span>:45:59 GMT
+Content-Type: text/html
+Content-Length: <span class="m">151</span>
+Location: http://n-rewrite.linuxpanda.tech:8084/2.txt
+Connection: keep-alive
+
+HTTP/1.1 <span class="m">404</span> Not Found
+Server: openresty/1.19.9.1
+Date: Tue, <span class="m">07</span> Dec <span class="m">2021</span> <span class="m">04</span>:45:59 GMT
+Content-Type: text/html
+Content-Length: <span class="m">159</span>
+Connection: keep-alive
+
+<span class="c1"># 测试重定向一个url的。默认是302临时重定向的。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># curl http://n-rewrite.linuxpanda.tech:8084/redirect3/3.txt -IL</span>
+HTTP/1.1 <span class="m">302</span> Moved Temporarily
+Server: openresty/1.19.9.1
+Date: Tue, <span class="m">07</span> Dec <span class="m">2021</span> <span class="m">04</span>:46:35 GMT
+Content-Type: text/html
+Content-Length: <span class="m">151</span>
+Connection: keep-alive
+Location: http://n-rewrite.linuxpanda.tech/3.txt
+
+curl: <span class="o">(</span><span class="m">7</span><span class="o">)</span> Failed connect to n-rewrite.linuxpanda.tech:80<span class="p">;</span> Connection refused
+
+<span class="c1"># 重定向4</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># curl http://n-rewrite.linuxpanda.tech:8084/redirect4/4.txt -IL</span>
+HTTP/1.1 <span class="m">301</span> Moved Permanently
+Server: openresty/1.19.9.1
+Date: Tue, <span class="m">07</span> Dec <span class="m">2021</span> <span class="m">04</span>:47:40 GMT
+Content-Type: text/html
+Content-Length: <span class="m">175</span>
+Connection: keep-alive
+Location: http://n-rewrite.linuxpanda.tech/4.txt
+
+curl: <span class="o">(</span><span class="m">7</span><span class="o">)</span> Failed connect to n-rewrite.linuxpanda.tech:80<span class="p">;</span> Connection refused
+</pre></div>
+</div>
+<p>可以看出：</p>
+<ul class="simple">
+<li><p>rewrite 和return的指令优先级基本一致， 谁在前谁先生效。</p></li>
+<li><p>permanent 是301， last这是302的，默认也是302的重定向。</p></li>
+<li><p>break这个会跳过执行，然后执行content阶段的。</p></li>
+<li><p>last这个会继续回头进行匹配location的。  内部重定向的，</p></li>
+</ul>
+</section>
+<section id="rewrite-error">
+<h2><span class="section-number">3.18. </span>rewrite 行为记录error日志<a class="headerlink" href="#rewrite-error" title="Permalink to this headline"></a></h2>
+<p>通过rewrite_log on即可启用的，</p>
+</section>
+<section id="if">
+<h2><span class="section-number">3.19. </span>if指令<a class="headerlink" href="#if" title="Permalink to this headline"></a></h2>
+<p>if指令使用在server或者location中的。</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 匹配ie浏览器</span>
+<span class="k">if</span> <span class="o">(</span><span class="nv">$http_user_agent</span> ~ MSIE<span class="o">)</span> <span class="o">{</span>
+    rewrite ^<span class="o">(</span>.*<span class="o">)</span>$ /msie/<span class="nv">$1</span> break<span class="p">;</span>
+<span class="o">}</span>
+
+<span class="c1"># 提取cooke部分作为变量</span>
+<span class="k">if</span> <span class="o">(</span><span class="nv">$http_cookie</span> ~* <span class="s2">&quot;id=([^;]+)(?:;|</span>$<span class="s2">)&quot;</span><span class="o">)</span> <span class="o">{</span>
+    <span class="nb">set</span> <span class="nv">$id</span> <span class="nv">$1</span><span class="p">;</span>
+<span class="o">}</span>
+
+<span class="c1"># 判定请求方法</span>
+<span class="k">if</span> <span class="o">(</span><span class="nv">$request_method</span> <span class="o">=</span> POST<span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="m">405</span><span class="p">;</span>
+<span class="o">}</span>
+
+<span class="c1"># 判定变量，进行速度限制</span>
+<span class="k">if</span> <span class="o">(</span><span class="nv">$slow</span><span class="o">)</span> <span class="o">{</span>
+    limit_rate 10k<span class="p">;</span>
+<span class="o">}</span>
+
+<span class="c1"># 无效refer 给返回403</span>
+<span class="k">if</span> <span class="o">(</span><span class="nv">$invalid_referer</span><span class="o">)</span> <span class="o">{</span>
+    <span class="k">return</span> <span class="m">403</span><span class="p">;</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="location">
+<h2><span class="section-number">3.20. </span>location指令<a class="headerlink" href="#location" title="Permalink to this headline"></a></h2>
+<p>官方参考： <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_core_module.html#location">https://nginx.org/en/docs/http/ngx_http_core_module.html#location</a></p>
+<img alt="../_images/nginx18.png" src="../_images/nginx18.png" />
+<ul class="simple">
+<li><p>精确匹配优先</p></li>
+<li><p>^~禁用正则次之</p></li>
+<li><p>最长正则</p></li>
+<li><p>最长匹配前缀</p></li>
+</ul>
 </section>
 </section>
 
