@@ -185,6 +185,7 @@ nginx处理的11个阶段
 
 real_ip_header 这个默认值是X-Real-IP的 
 
+.. note::  这个模块默认是不会编译到nginx的， 需要启用才可以的。 --with-http_realip_module	方式启用。
 
 .. literalinclude:: ../files/real_ip.conf
    :encoding: utf-8
@@ -212,3 +213,86 @@ real_ip_header 这个默认值是X-Real-IP的
 ------------------------------------
 nginx中可以通过变量访问到用户的真实ip地址。 remote_addr就是用户的ip地址。 有了这个用户ip可以做些限流等分流操作。
 
+
+return 指令
+------------------------------------
+这个指令结束后续处理，直接给用户响应一个code和一些内容。
+
+官方参考： https://nginx.org/en/docs/http/ngx_http_rewrite_module.html
+
+几种样例
+
+.. code-block:: bash 
+  
+  return 404 "find nothing!" 
+  return http://www.baidu.com 
+  return 502 
+
+验证return errorpage优先级
+------------------------------------
+
+.. literalinclude:: ../files/return.conf
+   :encoding: utf-8
+   :language: text 
+   :emphasize-lines: 9
+
+
+效果验证
+
+.. code-block:: text 
+  
+  # return 405; 关闭
+  [root@zhaojiedi-elk-2 sites]# curl http://n-return.linuxpanda.tech:8084/ -IL
+  HTTP/1.1 404 Not Found
+  Server: openresty/1.19.9.1
+  Date: Tue, 07 Dec 2021 02:47:12 GMT
+  Content-Type: application/octet-stream
+  Content-Length: 14
+  Connection: keep-alive
+  
+  # return 405; 启用
+  [root@zhaojiedi-elk-2 sites]# curl http://n-return.linuxpanda.tech:8084/ -IL
+  HTTP/1.1 405 Not Allowed
+  Server: openresty/1.19.9.1
+  Date: Tue, 07 Dec 2021 02:48:12 GMT
+  Content-Type: text/html
+  Content-Length: 163
+  Connection: keep-alive
+
+
+通过验证我们知道， 
+- server种的return指令是高于location的， 和配置前后无关系的。
+- return就是直接返回了， 不会在经过errpage这些处理的。 
+
+error_page 
+------------------------------------
+error_page 用于给特定code的展示一个特定的错误页面。 url可以包含变量的。 适用于给用户友好提示。
+
+官方参考： https://nginx.org/en/docs/http/ngx_http_core_module.html#error_page
+
+几种样例配置
+
+.. code-block:: text 
+  
+  # 这种方式，会引发内部的重定向，请求对应的页面， 方法为get， 而不是请求的原始方法。
+  error_page 404 /404.html; 
+  error_page 500 502 503 504 /5xx.html ;
+  
+  # 使用 = 方式，可以改变响应码的。
+  error_page 404 =200 /empty.gif;
+  
+  # 这个没有指定200 ，那就是跟进/404.php的返回码来定。
+  error_page 404 = /404.php; 
+  
+  # 下面的这个部分就是将404请求，转发给后端backend来响应
+  location / { 
+      error_page 404 =@fallback; 
+  }
+  location @fallback {
+    proxy_pass http://backend ; 
+  }
+  
+  # 使用url的方式， 默认是响应码是302的， 当然可以指定其他的 301， 302 303 307 308  只能这几个。 第二个404=301 就是指定方式。
+  error_page 403 http://www.linuxpanda.tech/forbidden.html;
+  error_page 404=301 http://www.linuxpanda.tech/notfound.html; 
+  
