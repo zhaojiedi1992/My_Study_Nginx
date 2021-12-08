@@ -74,6 +74,18 @@
 <li class="toctree-l2"><a class="reference internal" href="#content-type">3.31. 静态文件返回的content-type</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#index">3.32. index模块</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#auto-index">3.33. auto index 模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#log">3.34. log阶段</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id12">3.35. 替换响应中的字符串</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id15">3.36. 在相应的前后添加内容</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id16">3.37. 变量的惰性求值</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#http">3.38. http框架使用的常用变量</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id17">3.38.1. http请求相关的变量</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tcp">3.38.2. tcp连接相关的变量</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#nginx">3.38.3. nginx处理请求过程中产生的变量</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id18">3.38.4. 发送http响应时相关的变量</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id19">3.38.5. nginx系统变量</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -890,7 +902,7 @@ curl http://n-alias.linuxpanda.tech:8084/alias
 <p>几个主要参数含义：</p>
 <ul class="simple">
 <li><p>autoindex : 开启auto index</p></li>
-<li><p>autoindex_exact_size:  展示精确大小，off展示人性化格式。</p></li>
+<li><p>autoindex_exact_size:  对于html格式，指定是否输出目录列表输出准确的文件大小。</p></li>
 <li><p>autoindex_format: 响应格式，默认是html的格式的。</p></li>
 <li><p>autoindex_localtime: 日期的本地时间。</p></li>
 </ul>
@@ -912,6 +924,139 @@ curl http://n-alias.linuxpanda.tech:8084/alias
 <img alt="../_images/nginx21.png" src="../_images/nginx21.png" />
 <p>设置为xml的效果</p>
 <img alt="../_images/nginx22.png" src="../_images/nginx22.png" />
+</section>
+<section id="log">
+<h2><span class="section-number">3.34. </span>log阶段<a class="headerlink" href="#log" title="Permalink to this headline"></a></h2>
+<p>log模块是将http请求相关信息记录到日志中，无法被禁用。</p>
+<p>官方文档： <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_log_module.html">https://nginx.org/en/docs/http/ngx_http_log_module.html</a></p>
+<p>使用样例</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>log_format  main  <span class="s1">&#39;$remote_addr - $remote_user [$time_local] &quot;$request&quot; &#39;</span>
+                      <span class="s1">&#39;$status $body_bytes_sent &quot;$http_referer&quot; &#39;</span>
+                      <span class="s1">&#39;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&#39;</span>
+          <span class="s1">&#39;request_filename=$request_filename document_root=$document_root realpath_root=$realpath_root &#39;</span><span class="p">;</span>
+
+    access_log  logs/access.log  main<span class="p">;</span>
+    <span class="c1"># access_log /path/to/log.gz combined gzip flush=5m;</span>
+</pre></div>
+</div>
+</section>
+<section id="id12">
+<h2><span class="section-number">3.35. </span>替换响应中的字符串<a class="headerlink" href="#id12" title="Permalink to this headline"></a></h2>
+<p>通过sub模块提供的，完成对响应的内容进行替换，支持变量方式。 默认是没有编译进来nginx的。</p>
+<p>官方文档： <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_sub_module.html">https://nginx.org/en/docs/http/ngx_http_sub_module.html</a></p>
+<p>主要参数说明</p>
+<ul class="simple">
+<li><p>sub_filter: 替换命令</p></li>
+<li><p>sub_filter_once： 只替换一次</p></li>
+<li><p>sub_filter_last_modified： 是否展示Last-Modified响应头， 默认是off的，也就是这个header被移除的。</p></li>
+<li><p>sub_filter_types: 哪些类型文件才替换，默认是html，<a href="#id13"><span class="problematic" id="id14">*</span></a>表示所有类型。</p></li>
+</ul>
+<p>样例配置如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8084;
+	server_name n-sub.linuxpanda.tech;
+
+	location / {
+		alias html/ ;
+    		sub_filter &#39;Nginx.oRg&#39;  &#39;$host/nginx&#39;;
+		sub_filter &#39;zhaojiedi&#39; &#39;panda&#39;;
+    		#sub_filter_once on;
+		sub_filter_once off;
+		#sub_filter_last_modified off;
+		sub_filter_last_modified on;
+	}	
+}
+</pre></div>
+</div>
+<p>测试效果图如下</p>
+<img alt="../_images/nginx24.png" src="../_images/nginx24.png" />
+<p>可以看到对响应的content进行了替换工作。</p>
+</section>
+<section id="id15">
+<h2><span class="section-number">3.36. </span>在相应的前后添加内容<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h2>
+<p>这个ngx_http_addition_filter_module模块是给响应内容添加特定的内容的， 默认是未编译到nginx的。</p>
+<p>官方文档： <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_addition_module.html">https://nginx.org/en/docs/http/ngx_http_addition_module.html</a></p>
+<p>主要参数含义：</p>
+<ul class="simple">
+<li><p>add_before_body： 之前添加的</p></li>
+<li><p>add_after_body： 之后添加的。</p></li>
+<li><p>addition_types： 哪些类型才添加内容。</p></li>
+</ul>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8084;
+	server_name n-addition.linuxpanda.tech;
+	
+	location / {
+    		add_before_body /before_action;
+    		add_after_body  /after_action;
+		addition_types *;
+	}	
+
+	location /before_action {
+		return 200 &#39;new content before\n&#39;;
+	}
+
+	location /after_action {
+		return 200 &#39;new content after\n&#39;;
+	}
+}
+</pre></div>
+</div>
+<p>验证效果</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-addition.linuxpanda.tech:8084/</span>
+new content before
+......
+......
+Nginx.oRg  Nginx.oRg zhaojiedi
+new content after
+</pre></div>
+</div>
+</section>
+<section id="id16">
+<h2><span class="section-number">3.37. </span>变量的惰性求值<a class="headerlink" href="#id16" title="Permalink to this headline"></a></h2>
+<p>变量使用的时候才求值，变量的值可能随时都变化，其值为当时使用的那一刻值。</p>
+</section>
+<section id="http">
+<h2><span class="section-number">3.38. </span>http框架使用的常用变量<a class="headerlink" href="#http" title="Permalink to this headline"></a></h2>
+<section id="id17">
+<h3><span class="section-number">3.38.1. </span>http请求相关的变量<a class="headerlink" href="#id17" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>arg_参数名： url中某个具体的参数值</p></li>
+<li><p>query_string: args变量完全相同</p></li>
+<li><p>args: 全部url参数</p></li>
+<li><p>is_args: 如果url中有参数则返回，如果无就是空。</p></li>
+<li><p>content_length:  请求中的Content_Length头部的值</p></li>
+<li><p>content_type: 标识请求包体类型的content_Type头部的值。</p></li>
+<li><p>uri: 请求的uri 不包括后面的参数的。</p></li>
+<li><p>document_uri: 通uri</p></li>
+<li><p>request_uri: 包含uri及其后面的参数。</p></li>
+<li><p>scheme： 协议名字</p></li>
+<li><p>request_method: 请求方法</p></li>
+<li><p>request_length: 请求内容的大小，包括请求行，头部，包体。</p></li>
+<li><p>remote_user: base auth 传递的用户名。</p></li>
+<li><p>request_body: 请求包体，使用代理才生效。</p></li>
+<li><p>request: 含有方法，请求uri  协议信息， 请求的第一行。</p></li>
+<li><p>host: 请求行提取，如果有host header指定，那就替换， 如果都没有，使用匹配的server_name替换。</p></li>
+<li><p>http_host: host header</p></li>
+<li><p>http_user_agent: agent header</p></li>
+<li><p>http_referer: referer header</p></li>
+<li><p>http_via: via header</p></li>
+<li><p>http_x_forwarded_for: x_forwared_for header</p></li>
+<li><p>http_cookie: cookie header</p></li>
+</ul>
+</section>
+<section id="tcp">
+<h3><span class="section-number">3.38.2. </span>tcp连接相关的变量<a class="headerlink" href="#tcp" title="Permalink to this headline"></a></h3>
+</section>
+<section id="nginx">
+<h3><span class="section-number">3.38.3. </span>nginx处理请求过程中产生的变量<a class="headerlink" href="#nginx" title="Permalink to this headline"></a></h3>
+</section>
+<section id="id18">
+<h3><span class="section-number">3.38.4. </span>发送http响应时相关的变量<a class="headerlink" href="#id18" title="Permalink to this headline"></a></h3>
+</section>
+<section id="id19">
+<h3><span class="section-number">3.38.5. </span>nginx系统变量<a class="headerlink" href="#id19" title="Permalink to this headline"></a></h3>
+</section>
 </section>
 </section>
 

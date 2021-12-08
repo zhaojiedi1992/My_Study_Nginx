@@ -719,7 +719,7 @@ auto index 模块
 几个主要参数含义： 
 
 - autoindex : 开启auto index 
-- autoindex_exact_size:  展示精确大小，off展示人性化格式。
+- autoindex_exact_size:  对于html格式，指定是否输出目录列表输出准确的文件大小。
 - autoindex_format: 响应格式，默认是html的格式的。 
 - autoindex_localtime: 日期的本地时间。
 
@@ -736,3 +736,124 @@ auto index 模块
 设置为xml的效果
 
 .. image:: ../images/nginx22.png 
+
+
+log阶段
+------------------------------------
+log模块是将http请求相关信息记录到日志中，无法被禁用。 
+
+官方文档： https://nginx.org/en/docs/http/ngx_http_log_module.html
+
+
+使用样例
+
+.. code-block:: bash 
+
+  log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                        '$status $body_bytes_sent "$http_referer" '
+                        '"$http_user_agent" "$http_x_forwarded_for"'
+            'request_filename=$request_filename document_root=$document_root realpath_root=$realpath_root ';
+
+      access_log  logs/access.log  main;
+      # access_log /path/to/log.gz combined gzip flush=5m;
+
+
+替换响应中的字符串
+------------------------------------
+通过sub模块提供的，完成对响应的内容进行替换，支持变量方式。 默认是没有编译进来nginx的。 
+
+官方文档： https://nginx.org/en/docs/http/ngx_http_sub_module.html
+
+主要参数说明
+
+- sub_filter: 替换命令
+- sub_filter_once： 只替换一次
+- sub_filter_last_modified： 是否展示Last-Modified响应头， 默认是off的，也就是这个header被移除的。 
+- sub_filter_types: 哪些类型文件才替换，默认是html，*表示所有类型。
+
+样例配置如下
+
+.. literalinclude:: ../files/sub.conf
+   :encoding: utf-8
+   :language: text 
+
+测试效果图如下
+
+.. image:: ../images/nginx24.png 
+
+可以看到对响应的content进行了替换工作。
+
+在相应的前后添加内容
+------------------------------------
+这个ngx_http_addition_filter_module模块是给响应内容添加特定的内容的， 默认是未编译到nginx的。
+
+官方文档： https://nginx.org/en/docs/http/ngx_http_addition_module.html
+
+主要参数含义： 
+
+- add_before_body： 之前添加的
+- add_after_body： 之后添加的。
+- addition_types： 哪些类型才添加内容。
+
+
+.. literalinclude:: ../files/addition.conf
+   :encoding: utf-8
+   :language: text 
+
+验证效果
+
+.. code-block:: bash 
+
+  [root@zhaojiedi-elk-2 nginx]# curl http://n-addition.linuxpanda.tech:8084/
+  new content before
+  ......
+  ......
+  Nginx.oRg  Nginx.oRg zhaojiedi
+  new content after
+
+变量的惰性求值
+------------------------------------
+变量使用的时候才求值，变量的值可能随时都变化，其值为当时使用的那一刻值。
+
+http框架使用的常用变量
+------------------------------------
+
+http请求相关的变量
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- arg_参数名： url中某个具体的参数值
+- query_string: args变量完全相同
+- args: 全部url参数
+- is_args: 如果url中有参数则返回，如果无就是空。
+- content_length:  请求中的Content_Length头部的值
+- content_type: 标识请求包体类型的content_Type头部的值。
+- uri: 请求的uri 不包括后面的参数的。
+- document_uri: 通uri
+- request_uri: 包含uri及其后面的参数。
+- scheme： 协议名字
+- request_method: 请求方法
+- request_length: 请求内容的大小，包括请求行，头部，包体。
+- remote_user: base auth 传递的用户名。
+- request_body: 请求包体，使用代理才生效。
+- request: 含有方法，请求uri  协议信息， 请求的第一行。
+- host: 请求行提取，如果有host header指定，那就替换， 如果都没有，使用匹配的server_name替换。
+- http_host: host header
+- http_user_agent: agent header 
+- http_referer: referer header 
+- http_via: via header 
+- http_x_forwarded_for: x_forwared_for header 
+- http_cookie: cookie header 
+
+
+tcp连接相关的变量
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+nginx处理请求过程中产生的变量
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+发送http响应时相关的变量
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+nginx系统变量
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
