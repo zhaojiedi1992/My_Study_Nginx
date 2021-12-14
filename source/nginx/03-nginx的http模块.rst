@@ -848,12 +848,126 @@ http请求相关的变量
 tcp连接相关的变量
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+- binary_remote_addr: 客户端地址
+- connection: 递增的连接序号
+- connection_requests: 当前连接上执行过的请求数。
+- remote_addr: 客户端地址
+- remote_port: 客户端端口
+- proxy_protocal_addr: 返回proxy_protocol协议中的地址。
+- proxy_protocol_port: 返回proxy_protocol协议中的端口。
+- server_addr: 服务器端地址
+- server_port: 服务器端端口
+- TCP_INFO: tcp 内核参数
+- server_protocol: 服务器端协议。
+
+
 nginx处理请求过程中产生的变量
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- request_time : 请求处理到现在的耗时
+- server_name: 匹配的server_name
+- https： 是否开启https 
+- request_compltion: 请求是否处理完毕。
+- request_id: 请求id 
+- request_filename: 待访问的文件完整路径
+- document_root: 由root alias 规则生成的访问root
+- realpath_root: document_root路径（如果是软连的）换成真实路径。
+- limit_rate： 返回客户端的响应速度上限。 set设置即可。
+
+这里演示下limit_rate 的效果。
+
+配置如下
+
+
+.. literalinclude:: ../files/limit_rate.conf
+   :encoding: utf-8
+   :language: text 
+
+测试如下
+
+.. code-block:: bash 
+
+    time curl http://n-limit-rate.linuxpanda.tech:8084/ -L
+    time curl http://n-limit-rate.linuxpanda.tech:8084/ -L
+    real	0m27.087s
+    user	0m0.002s
+    sys	0m0.008s
+
+看到启用了limit_rate后， 速度明显受限了。
+
 
 发送http响应时相关的变量
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+- body_bytes_send: 响应body包体的长度
+- bytes_send: 全部http响应的长度
+- status: http响应的返回码
+- sent_trailer_名字： 把响应结尾内容里值返回。
+
+
+
+
 nginx系统变量
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- time_local: 本地时间
+- time_iso8601: iso8601标准时间。
+- nginx_version: 版本
+- pid: work pid 
+- pipe: 如果使用管道返回p
+- hostname: 服务器的主机名字。
+
+
+referer模块
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+referer模块记录访问的url的来源url地址的， 可以通过这个模块来拒绝非正常的网络访问我们站点的资源。
+
+相关参数
+
+- valid_referers: 控制那些是有效的refer
+- referer_hash_bucket_size: referhash大小
+- refer_hash_max_size: 最大hash个数。
+
+
+valid_referers 几个参数说明
+
+- none: 允许缺失referer头部的请求访问。没有key的
+- block: 允许referer头部没有对应值的请求访问。没有value的。
+- server_name: 如果refer和server中的本机域名某个匹配则允许请求访问。
+- 正则： 如果满足正则表示匹配
+- 字符串： 如果包含特定字符串满足。
+
+如果有效， 会生成一个变量 invalid_referer变量=1 ，否则=0。
+
+配置如下
+
+
+.. literalinclude:: ../files/referer.conf
+   :encoding: utf-8
+   :language: text 
+
+测试效果
+
+.. code-block:: bash 
+  
+  [root@zhaojiedi-elk-2 conf]# curl http://n-referer.linuxpanda.tech:8084/
+  valid
+  [root@zhaojiedi-elk-2 conf]# curl http://n-referer.linuxpanda.tech:8084/ -H "Referer: "
+  valid
+  [root@zhaojiedi-elk-2 conf]# curl http://n-referer.linuxpanda.tech:8084/ -H "Referer: http://abc.com" -I
+  HTTP/1.1 403 Forbidden
+  Server: openresty/1.19.9.1 (no pool)
+  Date: Tue, 14 Dec 2021 13:56:26 GMT
+  Content-Type: text/html
+  Content-Length: 169
+  Connection: keep-alive
+  
+  [root@zhaojiedi-elk-2 conf]# curl http://n-referer.linuxpanda.tech:8084/ -H "Referer: http://www.google.com" -I
+  HTTP/1.1 200 OK
+  Server: openresty/1.19.9.1 (no pool)
+  Date: Tue, 14 Dec 2021 13:56:52 GMT
+  Content-Type: application/octet-stream
+  Content-Length: 6
+  Connection: keep-alive
+  
 

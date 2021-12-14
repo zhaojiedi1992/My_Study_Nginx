@@ -84,6 +84,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#nginx">3.38.3. nginx处理请求过程中产生的变量</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#id18">3.38.4. 发送http响应时相关的变量</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#id19">3.38.5. nginx系统变量</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#referer">3.38.6. referer模块</a></li>
 </ul>
 </li>
 </ul>
@@ -1047,15 +1048,135 @@ new content after
 </section>
 <section id="tcp">
 <h3><span class="section-number">3.38.2. </span>tcp连接相关的变量<a class="headerlink" href="#tcp" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>binary_remote_addr: 客户端地址</p></li>
+<li><p>connection: 递增的连接序号</p></li>
+<li><p>connection_requests: 当前连接上执行过的请求数。</p></li>
+<li><p>remote_addr: 客户端地址</p></li>
+<li><p>remote_port: 客户端端口</p></li>
+<li><p>proxy_protocal_addr: 返回proxy_protocol协议中的地址。</p></li>
+<li><p>proxy_protocol_port: 返回proxy_protocol协议中的端口。</p></li>
+<li><p>server_addr: 服务器端地址</p></li>
+<li><p>server_port: 服务器端端口</p></li>
+<li><p>TCP_INFO: tcp 内核参数</p></li>
+<li><p>server_protocol: 服务器端协议。</p></li>
+</ul>
 </section>
 <section id="nginx">
 <h3><span class="section-number">3.38.3. </span>nginx处理请求过程中产生的变量<a class="headerlink" href="#nginx" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>request_time : 请求处理到现在的耗时</p></li>
+<li><p>server_name: 匹配的server_name</p></li>
+<li><p>https： 是否开启https</p></li>
+<li><p>request_compltion: 请求是否处理完毕。</p></li>
+<li><p>request_id: 请求id</p></li>
+<li><p>request_filename: 待访问的文件完整路径</p></li>
+<li><p>document_root: 由root alias 规则生成的访问root</p></li>
+<li><p>realpath_root: document_root路径（如果是软连的）换成真实路径。</p></li>
+<li><p>limit_rate： 返回客户端的响应速度上限。 set设置即可。</p></li>
+</ul>
+<p>这里演示下limit_rate 的效果。</p>
+<p>配置如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8084;
+	server_name n-limit-rate.linuxpanda.tech;
+	root html/;
+	location /{
+		limit_rate 50;
+	}
+}
+</pre></div>
+</div>
+<p>测试如下</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">time</span> curl http://n-limit-rate.linuxpanda.tech:8084/ -L
+<span class="nb">time</span> curl http://n-limit-rate.linuxpanda.tech:8084/ -L
+real        0m27.087s
+user        0m0.002s
+sys 0m0.008s
+</pre></div>
+</div>
+<p>看到启用了limit_rate后， 速度明显受限了。</p>
 </section>
 <section id="id18">
 <h3><span class="section-number">3.38.4. </span>发送http响应时相关的变量<a class="headerlink" href="#id18" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>body_bytes_send: 响应body包体的长度</p></li>
+<li><p>bytes_send: 全部http响应的长度</p></li>
+<li><p>status: http响应的返回码</p></li>
+<li><p>sent_trailer_名字： 把响应结尾内容里值返回。</p></li>
+</ul>
 </section>
 <section id="id19">
 <h3><span class="section-number">3.38.5. </span>nginx系统变量<a class="headerlink" href="#id19" title="Permalink to this headline"></a></h3>
+<ul class="simple">
+<li><p>time_local: 本地时间</p></li>
+<li><p>time_iso8601: iso8601标准时间。</p></li>
+<li><p>nginx_version: 版本</p></li>
+<li><p>pid: work pid</p></li>
+<li><p>pipe: 如果使用管道返回p</p></li>
+<li><p>hostname: 服务器的主机名字。</p></li>
+</ul>
+</section>
+<section id="referer">
+<h3><span class="section-number">3.38.6. </span>referer模块<a class="headerlink" href="#referer" title="Permalink to this headline"></a></h3>
+<p>referer模块记录访问的url的来源url地址的， 可以通过这个模块来拒绝非正常的网络访问我们站点的资源。</p>
+<p>相关参数</p>
+<ul class="simple">
+<li><p>valid_referers: 控制那些是有效的refer</p></li>
+<li><p>referer_hash_bucket_size: referhash大小</p></li>
+<li><p>refer_hash_max_size: 最大hash个数。</p></li>
+</ul>
+<p>valid_referers 几个参数说明</p>
+<ul class="simple">
+<li><p>none: 允许缺失referer头部的请求访问。没有key的</p></li>
+<li><p>block: 允许referer头部没有对应值的请求访问。没有value的。</p></li>
+<li><p>server_name: 如果refer和server中的本机域名某个匹配则允许请求访问。</p></li>
+<li><p>正则： 如果满足正则表示匹配</p></li>
+<li><p>字符串： 如果包含特定字符串满足。</p></li>
+</ul>
+<p>如果有效， 会生成一个变量 invalid_referer变量=1 ，否则=0。</p>
+<p>配置如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8084;
+	server_name n-referer.linuxpanda.tech;
+
+	location / {
+		alias html/ ;
+		valid_referers none blocked server_names
+               		*.linuxpanda.pub www.linuxpanda.cn/nginx/
+               		~\.google\.;
+
+		if ($invalid_referer) {
+    			return 403;
+		}
+
+		return 200 &#39;valid\n&#39;;
+	}	
+}
+</pre></div>
+</div>
+<p>测试效果</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-referer.linuxpanda.tech:8084/</span>
+valid
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-referer.linuxpanda.tech:8084/ -H &quot;Referer: &quot;</span>
+valid
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-referer.linuxpanda.tech:8084/ -H &quot;Referer: http://abc.com&quot; -I</span>
+HTTP/1.1 <span class="m">403</span> Forbidden
+Server: openresty/1.19.9.1 <span class="o">(</span>no pool<span class="o">)</span>
+Date: Tue, <span class="m">14</span> Dec <span class="m">2021</span> <span class="m">13</span>:56:26 GMT
+Content-Type: text/html
+Content-Length: <span class="m">169</span>
+Connection: keep-alive
+
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-referer.linuxpanda.tech:8084/ -H &quot;Referer: http://www.google.com&quot; -I</span>
+HTTP/1.1 <span class="m">200</span> OK
+Server: openresty/1.19.9.1 <span class="o">(</span>no pool<span class="o">)</span>
+Date: Tue, <span class="m">14</span> Dec <span class="m">2021</span> <span class="m">13</span>:56:52 GMT
+Content-Type: application/octet-stream
+Content-Length: <span class="m">6</span>
+Connection: keep-alive
+</pre></div>
+</div>
 </section>
 </section>
 </section>
