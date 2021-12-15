@@ -87,6 +87,12 @@
 <li class="toctree-l3"><a class="reference internal" href="#referer">3.38.6. referer模块</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#secure-link">3.39. secure_link模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#map">3.40. map指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#split-clients">3.41. split_clients模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#geo">3.42. geo模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#geoipmaxmind">3.43. geoip模块基于maxmind数据库获取</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#keepalive">3.44. 对客户端keepalive行为控制的指令</a></li>
 </ul>
 </li>
 </ul>
@@ -1178,6 +1184,116 @@ Connection: keep-alive
 </pre></div>
 </div>
 </section>
+</section>
+<section id="secure-link">
+<h2><span class="section-number">3.39. </span>secure_link模块<a class="headerlink" href="#secure-link" title="Permalink to this headline"></a></h2>
+<p>这个模块可以通过某服务器生成加密的安全连接url返回给客户端， 客户端使用安全的url, nginx通过secure_link变量判断是否验证通过。</p>
+<p>几个变量说明</p>
+<ul class="simple">
+<li><p>secure_link: 指定请求中的md5，请求中的过期时间。</p></li>
+<li><p>secure_link_md5: 计算md5使用那些顺序组合</p></li>
+<li><p>secure_link_secret: 秘钥单词。</p></li>
+</ul>
+<p>校验结果说明secure_link</p>
+<ul class="simple">
+<li><p>值为空的： 验证不通过</p></li>
+<li><p>值为0： url过期</p></li>
+<li><p>值为1： 验证通过</p></li>
+</ul>
+</section>
+<section id="map">
+<h2><span class="section-number">3.40. </span>map指令<a class="headerlink" href="#map" title="Permalink to this headline"></a></h2>
+<p>map的能力更像其他语言的switch功能， 通过case 1 case 2 命中不同的case 设置不同的变量， 方便后续的模块使用变量的。</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>map $http_host $name {</dt><dd><p>hostnames;
+default 0;
+~map.taow+.org.cn 1;
+*.linuxpanda.org.cn 2;
+map.linuxpanda.tech 3;
+map.linuxpanda.* 4 ;</p>
+</dd>
+</dl>
+<p>}
+和其他的语言的switch case不一样， 一个一个按照顺序去匹配， 这个匹配顺序是这样的。</p>
+<ul class="simple">
+<li><p>字符串严格匹配</p></li>
+<li><p>使用hostnames可以对域名前缀*泛域名匹配。</p></li>
+<li><p>~和~* 正则表达式匹配</p></li>
+<li><p>都不的话， 使用default指令的配置。</p></li>
+</ul>
+</section>
+<section id="split-clients">
+<h2><span class="section-number">3.41. </span>split_clients模块<a class="headerlink" href="#split-clients" title="Permalink to this headline"></a></h2>
+<p>基于已有的变量创建新的变量，为其他ab测试提供更多的可能性。</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>split_clients <span class="s2">&quot;</span><span class="si">${</span><span class="nv">http_testcli</span><span class="si">}</span><span class="s2">&quot;</span> <span class="nv">$variant</span> <span class="o">{</span>
+
+  <span class="m">0</span>.51% .one<span class="p">;</span>
+  <span class="m">20</span>% .two<span class="p">;</span>
+  <span class="m">50</span>% .three<span class="p">;</span>
+  * <span class="s2">&quot;&quot;</span>,
+
+<span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="geo">
+<h2><span class="section-number">3.42. </span>geo模块<a class="headerlink" href="#geo" title="Permalink to this headline"></a></h2>
+<p>根据ip地址创建新的变量。
+格式geo $adress $variable {}</p>
+<p>匹配优先最长匹配</p>
+<ul class="simple">
+<li><p>通过ip地址或者子网掩码的方式，如果ip在范围内，使用其后的值。</p></li>
+<li><p>default是没有命中的时候，兜底的默认值。</p></li>
+<li><p>include: 优化可读性</p></li>
+<li><p>delete 删除指定的网络。</p></li>
+</ul>
+</section>
+<section id="geoipmaxmind">
+<h2><span class="section-number">3.43. </span>geoip模块基于maxmind数据库获取<a class="headerlink" href="#geoipmaxmind" title="Permalink to this headline"></a></h2>
+<p>需要安装c开发库， 编译启用geoip 然后配置nginx 。 详细操作如下</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+<p>geo_city主要变量说明</p>
+<ul class="simple">
+<li><p>geoip_country_code: 国家编码2字母</p></li>
+<li><p>geoip_country_code3: 国安编码3字母</p></li>
+<li><p>geoip_country_name: 国家名字</p></li>
+</ul>
+<p>geo_city提供的变量如下</p>
+<ul class="simple">
+<li><p>geoip_latitude: 维度</p></li>
+<li><p>geoip_longitude: 经度</p></li>
+<li><p>geoip_city_continent_code: 属于全球哪个大洲</p></li>
+<li><p>geoip_region 州或者省编码</p></li>
+<li><p>geoip_region_name: 名称，比如zhejiang</p></li>
+<li><p>geoip_city: 城市名字</p></li>
+<li><p>geoip_postal_code: 邮编号</p></li>
+</ul>
+</section>
+<section id="keepalive">
+<h2><span class="section-number">3.44. </span>对客户端keepalive行为控制的指令<a class="headerlink" href="#keepalive" title="Permalink to this headline"></a></h2>
+<p>多个http请求通过复用tcp连接实现以下功能。</p>
+<ul class="simple">
+<li><p>减少握手次数</p></li>
+<li><p>通过减少并发连接数减少服务器的资源消耗。</p></li>
+<li><p>降低tcp拥堵控制影响。</p></li>
+</ul>
+<p>常见的header说明</p>
+<ul class="simple">
+<li><p>connection: close: 表示不使用keepalive</p></li>
+<li><p>connection: keepalive: 启用keepalive.</p></li>
+<li><p>keep-alive: timeout=n: 表示keep alive保留的时间是多少秒。</p></li>
+</ul>
+<p>主要指令说明</p>
+<ul class="simple">
+<li><p>keepalive_disable: 哪个浏览器禁用，默认是msie6 .</p></li>
+<li><p>keepalive_request : 同一个连接做多使用的请求数量。</p></li>
+<li><p>keepalive_timeout: 超时时间。</p></li>
+</ul>
 </section>
 </section>
 

@@ -949,7 +949,7 @@ valid_referers 几个参数说明
 测试效果
 
 .. code-block:: bash 
-  
+
   [root@zhaojiedi-elk-2 conf]# curl http://n-referer.linuxpanda.tech:8084/
   valid
   [root@zhaojiedi-elk-2 conf]# curl http://n-referer.linuxpanda.tech:8084/ -H "Referer: "
@@ -961,7 +961,7 @@ valid_referers 几个参数说明
   Content-Type: text/html
   Content-Length: 169
   Connection: keep-alive
-  
+
   [root@zhaojiedi-elk-2 conf]# curl http://n-referer.linuxpanda.tech:8084/ -H "Referer: http://www.google.com" -I
   HTTP/1.1 200 OK
   Server: openresty/1.19.9.1 (no pool)
@@ -969,5 +969,121 @@ valid_referers 几个参数说明
   Content-Type: application/octet-stream
   Content-Length: 6
   Connection: keep-alive
-  
+
+secure_link模块
+------------------------------------
+这个模块可以通过某服务器生成加密的安全连接url返回给客户端， 客户端使用安全的url, nginx通过secure_link变量判断是否验证通过。 
+
+几个变量说明
+
+- secure_link: 指定请求中的md5，请求中的过期时间。
+- secure_link_md5: 计算md5使用那些顺序组合
+- secure_link_secret: 秘钥单词。
+
+校验结果说明secure_link 
+
+- 值为空的： 验证不通过
+- 值为0： url过期
+- 值为1： 验证通过
+
+map指令
+------------------------------------
+
+map的能力更像其他语言的switch功能， 通过case 1 case 2 命中不同的case 设置不同的变量， 方便后续的模块使用变量的。
+
+.. code-block:: bash 
+
+map $http_host $name {
+  hostnames;
+  default 0;
+  ~map\.tao\w+\.org.cn 1; 
+  \*.linuxpanda.org.cn 2;
+  map.linuxpanda.tech 3;
+  map.linuxpanda.* 4 ;
+}
+和其他的语言的switch case不一样， 一个一个按照顺序去匹配， 这个匹配顺序是这样的。 
+
+- 字符串严格匹配
+- 使用hostnames可以对域名前缀*泛域名匹配。
+- ~和~* 正则表达式匹配
+- 都不的话， 使用default指令的配置。
+
+
+split_clients模块
+------------------------------------
+
+基于已有的变量创建新的变量，为其他ab测试提供更多的可能性。
+
+.. code-block:: bash 
+
+  split_clients "${http_testcli}" $variant {
+
+    0.51% .one;
+    20% .two;
+    50% .three;
+    * "",
+
+  }
+
+geo模块
+------------------------------------
+根据ip地址创建新的变量。
+格式geo $adress $variable {}
+
+匹配优先最长匹配
+
+- 通过ip地址或者子网掩码的方式，如果ip在范围内，使用其后的值。
+- default是没有命中的时候，兜底的默认值。
+- include: 优化可读性
+- delete 删除指定的网络。
+
+
+geoip模块基于maxmind数据库获取
+------------------------------------
+
+需要安装c开发库， 编译启用geoip 然后配置nginx 。 详细操作如下
+
+.. code-block:: bash 
+
+
+
+geo_city主要变量说明
+
+- geoip_country_code: 国家编码2字母
+- geoip_country_code3: 国安编码3字母
+- geoip_country_name: 国家名字
+
+geo_city提供的变量如下
+
+- geoip_latitude: 维度
+- geoip_longitude: 经度
+- geoip_city_continent_code: 属于全球哪个大洲
+- geoip_region 州或者省编码
+- geoip_region_name: 名称，比如zhejiang
+- geoip_city: 城市名字
+- geoip_postal_code: 邮编号
+
+对客户端keepalive行为控制的指令
+------------------------------------
+
+多个http请求通过复用tcp连接实现以下功能。
+
+- 减少握手次数
+- 通过减少并发连接数减少服务器的资源消耗。
+- 降低tcp拥堵控制影响。
+
+常见的header说明
+
+- connection: close: 表示不使用keepalive
+- connection: keepalive: 启用keepalive.
+- keep-alive: timeout=n: 表示keep alive保留的时间是多少秒。
+
+主要指令说明
+
+- keepalive_disable: 哪个浏览器禁用，默认是msie6 .
+- keepalive_request : 同一个连接做多使用的请求数量。
+- keepalive_timeout: 超时时间。
+
+
+
 
