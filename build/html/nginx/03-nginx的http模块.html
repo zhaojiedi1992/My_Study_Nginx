@@ -77,14 +77,14 @@
 <li class="toctree-l2"><a class="reference internal" href="#auto-index">3.33. auto index 模块</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#log">3.34. log阶段</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id12">3.35. 替换响应中的字符串</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id15">3.36. 在相应的前后添加内容</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id16">3.37. 变量的惰性求值</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id13">3.36. 在相应的前后添加内容</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id14">3.37. 变量的惰性求值</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#http">3.38. http框架使用的常用变量</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id17">3.38.1. http请求相关的变量</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id15">3.38.1. http请求相关的变量</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#tcp">3.38.2. tcp连接相关的变量</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#nginx">3.38.3. nginx处理请求过程中产生的变量</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id18">3.38.4. 发送http响应时相关的变量</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id19">3.38.5. nginx系统变量</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id16">3.38.4. 发送http响应时相关的变量</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id17">3.38.5. nginx系统变量</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#referer">3.38.6. referer模块</a></li>
 </ul>
 </li>
@@ -958,7 +958,7 @@ curl http://n-alias.linuxpanda.tech:8084/alias
 <li><p>sub_filter: 替换命令</p></li>
 <li><p>sub_filter_once： 只替换一次</p></li>
 <li><p>sub_filter_last_modified： 是否展示Last-Modified响应头， 默认是off的，也就是这个header被移除的。</p></li>
-<li><p>sub_filter_types: 哪些类型文件才替换，默认是html，<a href="#id13"><span class="problematic" id="id14">*</span></a>表示所有类型。</p></li>
+<li><p>sub_filter_types: 哪些类型文件才替换，默认是html，*表示所有类型。</p></li>
 </ul>
 <p>样例配置如下</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
@@ -981,8 +981,8 @@ curl http://n-alias.linuxpanda.tech:8084/alias
 <img alt="../_images/nginx24.png" src="../_images/nginx24.png" />
 <p>可以看到对响应的content进行了替换工作。</p>
 </section>
-<section id="id15">
-<h2><span class="section-number">3.36. </span>在相应的前后添加内容<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h2>
+<section id="id13">
+<h2><span class="section-number">3.36. </span>在相应的前后添加内容<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h2>
 <p>这个ngx_http_addition_filter_module模块是给响应内容添加特定的内容的， 默认是未编译到nginx的。</p>
 <p>官方文档： <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_addition_module.html">https://nginx.org/en/docs/http/ngx_http_addition_module.html</a></p>
 <p>主要参数含义：</p>
@@ -1021,14 +1021,14 @@ new content after
 </pre></div>
 </div>
 </section>
-<section id="id16">
-<h2><span class="section-number">3.37. </span>变量的惰性求值<a class="headerlink" href="#id16" title="Permalink to this headline"></a></h2>
+<section id="id14">
+<h2><span class="section-number">3.37. </span>变量的惰性求值<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h2>
 <p>变量使用的时候才求值，变量的值可能随时都变化，其值为当时使用的那一刻值。</p>
 </section>
 <section id="http">
 <h2><span class="section-number">3.38. </span>http框架使用的常用变量<a class="headerlink" href="#http" title="Permalink to this headline"></a></h2>
-<section id="id17">
-<h3><span class="section-number">3.38.1. </span>http请求相关的变量<a class="headerlink" href="#id17" title="Permalink to this headline"></a></h3>
+<section id="id15">
+<h3><span class="section-number">3.38.1. </span>http请求相关的变量<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h3>
 <ul class="simple">
 <li><p>arg_参数名： url中某个具体的参数值</p></li>
 <li><p>query_string: args变量完全相同</p></li>
@@ -1105,8 +1105,8 @@ sys 0m0.008s
 </div>
 <p>看到启用了limit_rate后， 速度明显受限了。</p>
 </section>
-<section id="id18">
-<h3><span class="section-number">3.38.4. </span>发送http响应时相关的变量<a class="headerlink" href="#id18" title="Permalink to this headline"></a></h3>
+<section id="id16">
+<h3><span class="section-number">3.38.4. </span>发送http响应时相关的变量<a class="headerlink" href="#id16" title="Permalink to this headline"></a></h3>
 <ul class="simple">
 <li><p>body_bytes_send: 响应body包体的长度</p></li>
 <li><p>bytes_send: 全部http响应的长度</p></li>
@@ -1114,8 +1114,8 @@ sys 0m0.008s
 <li><p>sent_trailer_名字： 把响应结尾内容里值返回。</p></li>
 </ul>
 </section>
-<section id="id19">
-<h3><span class="section-number">3.38.5. </span>nginx系统变量<a class="headerlink" href="#id19" title="Permalink to this headline"></a></h3>
+<section id="id17">
+<h3><span class="section-number">3.38.5. </span>nginx系统变量<a class="headerlink" href="#id17" title="Permalink to this headline"></a></h3>
 <ul class="simple">
 <li><p>time_local: 本地时间</p></li>
 <li><p>time_iso8601: iso8601标准时间。</p></li>
