@@ -18,6 +18,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="4. 负载均衡" href="04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html" />
     <link rel="prev" title="2. nginx架构基础" href="02-nginx%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80.html" /> 
 </head>
 
@@ -95,6 +96,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#keepalive">3.44. 对客户端keepalive行为控制的指令</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html">4. 负载均衡</a></li>
 </ul>
 
         </div>
@@ -1204,20 +1206,17 @@ Connection: keep-alive
 <section id="map">
 <h2><span class="section-number">3.40. </span>map指令<a class="headerlink" href="#map" title="Permalink to this headline"></a></h2>
 <p>map的能力更像其他语言的switch功能， 通过case 1 case 2 命中不同的case 设置不同的变量， 方便后续的模块使用变量的。</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>map <span class="nv">$http_host</span> <span class="nv">$name</span> <span class="o">{</span>
+  hostnames<span class="p">;</span>
+  default <span class="m">0</span><span class="p">;</span>
+  ~map<span class="se">\.</span>tao<span class="se">\w</span>+<span class="se">\.</span>org.cn <span class="m">1</span><span class="p">;</span>
+  <span class="se">\*</span>.linuxpanda.org.cn <span class="m">2</span><span class="p">;</span>
+  map.linuxpanda.tech <span class="m">3</span><span class="p">;</span>
+  map.linuxpanda.* <span class="m">4</span> <span class="p">;</span>
+<span class="o">}</span>
 </pre></div>
 </div>
-<dl class="simple">
-<dt>map $http_host $name {</dt><dd><p>hostnames;
-default 0;
-~map.taow+.org.cn 1;
-*.linuxpanda.org.cn 2;
-map.linuxpanda.tech 3;
-map.linuxpanda.* 4 ;</p>
-</dd>
-</dl>
-<p>}
-和其他的语言的switch case不一样， 一个一个按照顺序去匹配， 这个匹配顺序是这样的。</p>
+<p>和其他的语言的switch case不一样， 一个一个按照顺序去匹配， 这个匹配顺序是这样的。</p>
 <ul class="simple">
 <li><p>字符串严格匹配</p></li>
 <li><p>使用hostnames可以对域名前缀*泛域名匹配。</p></li>
@@ -1302,6 +1301,7 @@ map.linuxpanda.* 4 ;</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="02-nginx%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80.html" class="btn btn-neutral float-left" title="2. nginx架构基础" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html" class="btn btn-neutral float-right" title="4. 负载均衡" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

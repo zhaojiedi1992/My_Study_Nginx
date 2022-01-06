@@ -61,12 +61,12 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#ssl">1.10. SSL发展</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id14">1.11. SSL通信过程</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id15">1.12. 配置证书</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#openresty-lua">1.13. openresty+lua样例</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#openresty-lua">1.12. openresty+lua样例</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="02-nginx%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80.html">2. nginx架构基础</a></li>
 <li class="toctree-l1"><a class="reference internal" href="03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html">3. nginx的http模块</a></li>
+<li class="toctree-l1"><a class="reference internal" href="04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html">4. 负载均衡</a></li>
 </ul>
 
         </div>
@@ -242,11 +242,10 @@ root     <span class="m">41782</span>  <span class="m">0</span>.0  <span class="
 <section id="id14">
 <h2><span class="section-number">1.11. </span>SSL通信过程<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h2>
 <img alt="../_images/nginx04.png" src="../_images/nginx04.png" />
-</section>
-<section id="id15">
-<h2><span class="section-number">1.12. </span>配置证书<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h2>
-<p>一般情况下会通过nginx的include来包含各个域名的配置文件，
-通过include sites/<a href="#id16"><span class="problematic" id="id17">*</span></a>.conf 这种片段来包含sites目录下各个配置文件， 具体配置文件里面是每个域名的配置。</p>
+<p>配置证书
+—————————、
+一般情况下会通过nginx的include来包含各个域名的配置文件。
+通过include sites/<a href="#id15"><span class="problematic" id="id16">*</span></a>.conf 这种片段来包含sites目录下各个配置文件， 具体配置文件里面是每个域名的配置。</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 老的配置</span>
 <span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># cat sites/nx.linuxpanda.tech.conf</span>
 server<span class="o">{</span>
@@ -274,7 +273,7 @@ server<span class="o">{</span>
 </div>
 </section>
 <section id="openresty-lua">
-<h2><span class="section-number">1.13. </span>openresty+lua样例<a class="headerlink" href="#openresty-lua" title="Permalink to this headline"></a></h2>
+<h2><span class="section-number">1.12. </span>openresty+lua样例<a class="headerlink" href="#openresty-lua" title="Permalink to this headline"></a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1">#添加如下片段</span>
     location /lua <span class="o">{</span>
         default_type text/html<span class="p">;</span>
