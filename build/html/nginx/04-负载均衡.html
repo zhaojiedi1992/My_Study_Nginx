@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4. 负载均衡 &mdash; My_Study_Nginx v1.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="3. nginx的http模块" href="03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> My_Study_Nginx
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">nginx</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="01-%E5%88%9D%E8%AF%86nginx.html">1. 初识nginx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="02-nginx%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80.html">2. nginx架构基础</a></li>
+<li class="toctree-l1"><a class="reference internal" href="03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html">3. nginx的http模块</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. 负载均衡</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#nginx">4.1. nginx扩展方式</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">4.2. 支持的反向代理协议</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">4.3. 负载均衡基础指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">4.4. 对上游服务使用长连接</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">4.5. 轮训配置样例</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#hash">4.6. 反向代理的hash算法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id6">4.7. 一致性hash算法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id7">4.8. 连接做少的上游服务器</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#upsteam">4.9. upsteam共享内存</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id8">4.10. upsteam模块提供的变量</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#http">4.11. http反向代理的处理流程</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#proxy">4.12. proxy模块的基本使用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id9">4.13. 修改向后端的请求行</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id10">4.14. 接收客户端请求的包体</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id11">4.15. 向上游建立连接</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">My_Study_Nginx</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><span class="section-number">4. </span>负载均衡</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/nginx/04-负载均衡.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1><span class="section-number">4. </span>负载均衡<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<section id="nginx">
+<h2><span class="section-number">4.1. </span>nginx扩展方式<a class="headerlink" href="#nginx" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>基于url对功能进行分发</p></li>
+<li><p>基于rr算法进行水平扩展</p></li>
+<li><p>基于ip地址映射到特定ip或者集群</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2><span class="section-number">4.2. </span>支持的反向代理协议<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>udp</p></li>
+<li><p>tcp</p></li>
+<li><p>memcached</p></li>
+<li><p>scgi</p></li>
+<li><p>uwsgi</p></li>
+<li><p>grpc</p></li>
+<li><p>http</p></li>
+<li><p>websocket</p></li>
+</ul>
+</section>
+<section id="id3">
+<h2><span class="section-number">4.3. </span>负载均衡基础指令<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<p>指定上游服务地址， 通过upstream指令指定， 内部通过server指令指定server。
+server指定的地址， 可以是域名、ip、或者socket地址。不加端口默认是80端口。</p>
+<p>官方文档: <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream">https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream</a></p>
+<p>server片段重要参数说明</p>
+<ul class="simple">
+<li><p>weight: 权重，默认是1</p></li>
+<li><p>max_conns: 最大活动连接数量，默认是0，也就是不限制。</p></li>
+<li><p>max_fails: 最大失败次数，也就是在fail_timeout这个时间内，如果出现max_fails次数的话，对应的server就不会再次被选择。</p></li>
+<li><p>fail_timeout: 默认是10s</p></li>
+<li><p>backup: 备用， 如果所有的主都不可用才使用这个的。</p></li>
+<li><p>down: 表示这个机器永远不要调度。</p></li>
+<li><p>resolve: 解析域名到地址的。必须使用共享内存的。1.5.12之后才支持动态感知域名变化的。</p></li>
+</ul>
+</section>
+<section id="id4">
+<h2><span class="section-number">4.4. </span>对上游服务使用长连接<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<p>降低ningx与上游服务器的建立关闭连接的消耗，提升吞吐量的同事降低延迟。</p>
+<p>http1.1才支持， 需要加入如下设置。</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>proxy_http_version <span class="m">1</span>.1<span class="p">;</span>
+proxy_set_header Connection <span class="s2">&quot;&quot;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>主要参数说明</p>
+<ul class="simple">
+<li><p>keepalive : 指定次数。</p></li>
+<li><p>keepalive_requests: 一个连接最多使用的req</p></li>
+<li><p>keepalive_timeout: 一个连接最多使用的时间</p></li>
+</ul>
+</section>
+<section id="id5">
+<h2><span class="section-number">4.5. </span>轮训配置样例<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<p>这里我先使用一个nginx启动了server， 测试如下</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl 127.0.0.1:8001</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl 127.0.0.1:8002</span>
+<span class="m">8002</span> s2
+</pre></div>
+</div>
+<p>配置样例</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>upstream rrups {
+	server 127.0.0.1:8001 weight=2 max_conns=2 max_fails=2 fail_timeout=5;
+	server 127.0.0.1:8002;
+	keepalive 20;
+}
+
+server {
+	listen 8084;
+	server_name n-rrups.linuxpanda.tech;
+	error_log myerror.log info;
+
+	location /{
+		proxy_pass http://rrups;
+		proxy_http_version 1.1;
+        	proxy_set_header Connection &quot;&quot;;
+	}
+}
+</pre></div>
+</div>
+<p>测试结果</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-rrups.linuxpanda.tech</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-rrups.linuxpanda.tech</span>
+<span class="m">8002</span> s2
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-rrups.linuxpanda.tech</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-rrups.linuxpanda.tech</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-rrups.linuxpanda.tech</span>
+<span class="m">8002</span> s2
+</pre></div>
+</div>
+<p>启用了keepalive 我们看下tcpdump 抓包的结果</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 ~<span class="o">]</span><span class="c1"># tcpdump -i lo port 8001 -n</span>
+tcpdump: verbose output suppressed, use -v or -vv <span class="k">for</span> full protocol decode
+listening on lo, link-type EN10MB <span class="o">(</span>Ethernet<span class="o">)</span>, capture size <span class="m">262144</span> bytes
+
+<span class="m">16</span>:20:09.756199 IP <span class="m">127</span>.0.0.1.42492 &gt; <span class="m">127</span>.0.0.1.vcom-tunnel: Flags <span class="o">[</span>S<span class="o">]</span>, seq <span class="m">1693123386</span>, win <span class="m">43690</span>, options <span class="o">[</span>mss <span class="m">65495</span>,sackOK,TS val <span class="m">299254666</span> ecr <span class="m">0</span>,nop,wscale <span class="m">7</span><span class="o">]</span>, length <span class="m">0</span>
+le <span class="m">7</span><span class="o">]</span>, length <span class="m">0</span>
+<span class="m">16</span>:20:09.756220 IP <span class="m">127</span>.0.0.1.42492 &gt; <span class="m">127</span>.0.0.1.vcom-tunnel: Flags <span class="o">[</span>.<span class="o">]</span>, ack <span class="m">1</span>, win <span class="m">342</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299254666</span> ecr <span class="m">299254666</span><span class="o">]</span>, length <span class="m">0</span>
+<span class="m">16</span>:20:09.756262 IP <span class="m">127</span>.0.0.1.42492 &gt; <span class="m">127</span>.0.0.1.vcom-tunnel: Flags <span class="o">[</span>P.<span class="o">]</span>, seq <span class="m">1</span>:70, ack <span class="m">1</span>, win <span class="m">342</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299254666</span> ecr <span class="m">299254666</span><span class="o">]</span>, length <span class="m">69</span>
+<span class="m">16</span>:20:09.756266 IP <span class="m">127</span>.0.0.1.vcom-tunnel &gt; <span class="m">127</span>.0.0.1.42492: Flags <span class="o">[</span>.<span class="o">]</span>, ack <span class="m">70</span>, win <span class="m">342</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299254666</span> ecr <span class="m">299254666</span><span class="o">]</span>, length <span class="m">0</span>
+<span class="m">16</span>:20:09.756357 IP <span class="m">127</span>.0.0.1.vcom-tunnel &gt; <span class="m">127</span>.0.0.1.42492: Flags <span class="o">[</span>P.<span class="o">]</span>, seq <span class="m">1</span>:171, ack <span class="m">70</span>, win <span class="m">342</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299254666</span> ecr <span class="m">299254666</span><span class="o">]</span>, length <span class="m">170</span>
+<span class="m">16</span>:20:09.756361 IP <span class="m">127</span>.0.0.1.42492 &gt; <span class="m">127</span>.0.0.1.vcom-tunnel: Flags <span class="o">[</span>.<span class="o">]</span>, ack <span class="m">171</span>, win <span class="m">350</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299254666</span> ecr <span class="m">299254666</span><span class="o">]</span>, length <span class="m">0</span>
+-----下面是第二次的。
+<span class="m">16</span>:20:35.599901 IP <span class="m">127</span>.0.0.1.42492 &gt; <span class="m">127</span>.0.0.1.vcom-tunnel: Flags <span class="o">[</span>P.<span class="o">]</span>, seq <span class="m">70</span>:139, ack <span class="m">171</span>, win <span class="m">350</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299280510</span> ecr <span class="m">299254666</span><span class="o">]</span>, length <span class="m">69</span>
+<span class="m">16</span>:20:35.600018 IP <span class="m">127</span>.0.0.1.vcom-tunnel &gt; <span class="m">127</span>.0.0.1.42492: Flags <span class="o">[</span>P.<span class="o">]</span>, seq <span class="m">171</span>:341, ack <span class="m">139</span>, win <span class="m">342</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299280510</span> ecr <span class="m">299280510</span><span class="o">]</span>, length <span class="m">170</span>
+<span class="m">16</span>:20:35.600028 IP <span class="m">127</span>.0.0.1.42492 &gt; <span class="m">127</span>.0.0.1.vcom-tunnel: Flags <span class="o">[</span>.<span class="o">]</span>, ack <span class="m">341</span>, win <span class="m">359</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299280510</span> ecr <span class="m">299280510</span><span class="o">]</span>, length <span class="m">0</span>
+</pre></div>
+</div>
+<p>可以看到第一次是三次握手了， 但是是没有F的falgs的，也就是关闭连接的， 接下里curl的直接传输了。</p>
+</section>
+<section id="hash">
+<h2><span class="section-number">4.6. </span>反向代理的hash算法<a class="headerlink" href="#hash" title="Permalink to this headline"></a></h2>
+<p>对于ipv4地址使用前面3个字节作为关键字，对ipv6使用完整的地址。通过ip_hash 进行配置。</p>
+<p>当然也可以通过hash key 方式配置非ip方式的。</p>
+<p>官方文档： <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_upstream_module.html#ip_hash">https://nginx.org/en/docs/http/ngx_http_upstream_module.html#ip_hash</a></p>
+<p>配置ip_hash</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>upstream rrups {
+	#ip_hash;
+	hash user_$arg_username;
+	server 127.0.0.1:8001 weight=2 max_conns=200 max_fails=2 fail_timeout=5;
+	server 127.0.0.1:8002;
+}
+
+server {
+	listen 8084;
+	server_name n-hash.linuxpanda.tech;
+	error_log myerror.log info;
+
+	location /{
+			set_real_ip_from  10.157.0.0/16;
+			set_real_ip_from  10.21.0.0/16;
+			real_ip_recursive on;
+			real_ip_header    X-Forwarded-For;
+
+			proxy_pass http://rrups;
+			proxy_http_version 1.1;
+        		proxy_set_header Connection &quot;&quot;;
+	}
+}
+</pre></div>
+</div>
+<p>验证1 ip_hash</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-hash.linuxpanda.tech:8084 -H &quot;X-Forwarded-For: 1.1.1.1&quot;</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-hash.linuxpanda.tech:8084 -H &quot;X-Forwarded-For: 1.1.1.1&quot;</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-hash.linuxpanda.tech:8084 -H &quot;X-Forwarded-For: 1.1.1.1&quot;</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-hash.linuxpanda.tech:8084 -H &quot;X-Forwarded-For: 1.1.1.1&quot;</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-hash.linuxpanda.tech:8084 -H &quot;X-Forwarded-For: 1.1.1.1&quot;</span>
+<span class="m">8001</span> s1
+</pre></div>
+</div>
+<p>验证1 hash key</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>zhaojiedi_dxm@instance-pu4usb9a ~<span class="o">]</span>$ curl http://n-hash.linuxpanda.tech:8084?username<span class="o">=</span>abc
+<span class="m">8001</span> s1
+<span class="o">[</span>zhaojiedi_dxm@instance-pu4usb9a ~<span class="o">]</span>$ curl http://n-hash.linuxpanda.tech:8084?username<span class="o">=</span>abc
+<span class="m">8001</span> s1
+<span class="o">[</span>zhaojiedi_dxm@instance-pu4usb9a ~<span class="o">]</span>$ curl http://n-hash.linuxpanda.tech:8084?username<span class="o">=</span>abc
+<span class="m">8001</span> s1
+<span class="o">[</span>zhaojiedi_dxm@instance-pu4usb9a ~<span class="o">]</span>$ curl http://n-hash.linuxpanda.tech:8084?username<span class="o">=</span>deaaa
+<span class="m">8002</span> s2
+<span class="o">[</span>zhaojiedi_dxm@instance-pu4usb9a ~<span class="o">]</span>$ curl http://n-hash.linuxpanda.tech:8084?username<span class="o">=</span>deaaa
+<span class="m">8002</span> s2
+<span class="o">[</span>zhaojiedi_dxm@instance-pu4usb9a ~<span class="o">]</span>$ curl http://n-hash.linuxpanda.tech:8084?username<span class="o">=</span>deaaa
+<span class="m">8002</span> s2
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h2><span class="section-number">4.7. </span>一致性hash算法<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<p>通过hash key consistent 即可。</p>
+</section>
+<section id="id7">
+<h2><span class="section-number">4.8. </span>连接做少的上游服务器<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
+</section>
+<section id="upsteam">
+<h2><span class="section-number">4.9. </span>upsteam共享内存<a class="headerlink" href="#upsteam" title="Permalink to this headline"></a></h2>
+<p>使用共享内存可以将upstream定义的策略数据，状态数据放到共享内存中，对所有worker进程生效。</p>
+</section>
+<section id="id8">
+<h2><span class="section-number">4.10. </span>upsteam模块提供的变量<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>upstream_addr: 地址</p></li>
+<li><p>upstream_connect_time: 建立了解消耗时间</p></li>
+<li><p>upstream_header_time: 接收上游的头部需要的时间</p></li>
+<li><p>upstream_response_time: 完整耗时</p></li>
+<li><p>upstream_bytes_received: 响应长度</p></li>
+<li><p>upstream_response_length: 包体长度</p></li>
+<li><p>upstream_status: 上游的状态吗， 如果没有连接上，502</p></li>
+<li><p>upstream_cookie_名称: 上游返回的set_cookie取出的值。</p></li>
+</ul>
+</section>
+<section id="http">
+<h2><span class="section-number">4.11. </span>http反向代理的处理流程<a class="headerlink" href="#http" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx25.png" src="../_images/nginx25.png" />
+</section>
+<section id="proxy">
+<h2><span class="section-number">4.12. </span>proxy模块的基本使用<a class="headerlink" href="#proxy" title="Permalink to this headline"></a></h2>
+<p>这个模块是支持http和https协议2种类型的代理的，
+proxy 后面的url必须以http或者https开头， 接下来是域名、ip 、socket或者upstream名字。前面2个是可以添加端口的。</p>
+<p>如果url参数带不带uri差异是比较大的。
+- 不携带uri: 直接转发给上游
+- 携带uri: 将location匹配的部分进行替换。</p>
+<p>提前准备一个后端
+.. code-block:: bash</p>
+<blockquote>
+<div><dl>
+<dt>server {</dt><dd><p>listen 8001 ;
+location / {</p>
+<blockquote>
+<div><p>return 200 ‘8001 s1rn uri=$uri rn’;</p>
+</div></blockquote>
+<p>}</p>
+</dd>
+</dl>
+<p>}</p>
+</div></blockquote>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>upstream r1 {
+	server 127.0.0.1:8001;
+}
+
+server {
+	listen 8084;
+	server_name n-proxy.linuxpanda.tech;
+	error_log myerror.log info;
+
+	location /a/b/c {
+		#proxy_pass http://r1;
+		proxy_pass http://r1/panda;
+		proxy_http_version 1.1;
+        	proxy_set_header Connection &quot;&quot;;
+	}
+}
+</pre></div>
+</div>
+<p>验证一下</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 不带uri方式的。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-proxy.linuxpanda.tech:8084/a/b/c/d/e/f</span>
+<span class="m">8001</span> s1
+<span class="nv">uri</span><span class="o">=</span>/a/b/c/d/e/f
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-proxy.linuxpanda.tech:8084/a/b/c/def</span>
+<span class="m">8001</span> s1
+<span class="nv">uri</span><span class="o">=</span>/a/b/c/def
+
+<span class="c1"># 带uri方式的。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-proxy.linuxpanda.tech:8084/a/b/c/def</span>
+<span class="m">8001</span> s1
+<span class="nv">uri</span><span class="o">=</span>/panda/def
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-proxy.linuxpanda.tech:8084/a/b/c/d/e/f</span>
+<span class="m">8001</span> s1
+<span class="nv">uri</span><span class="o">=</span>/panda/d/e/f
+</pre></div>
+</div>
+</section>
+<section id="id9">
+<h2><span class="section-number">4.13. </span>修改向后端的请求行<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_method: 修改请求方法</p></li>
+<li><p>proxy_http_version: 修改协议版本。</p></li>
+<li><p>proxy_set_header field value: 修改请求头部。</p></li>
+<li><p>proxy_pass_request_header： 用户的header是否发送。</p></li>
+<li><p>proxy_pass_request_body: body是否发送</p></li>
+<li><p>proxy_set_body: 自定义body方式。</p></li>
+</ul>
+</section>
+<section id="id10">
+<h2><span class="section-number">4.14. </span>接收客户端请求的包体<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_request_buffering 控制收完在转发还是边收边转发。</p></li>
+<li><p>client_max_body_size: 仅仅对头部含有Content-Length有效超过最大长度后，返回413错误。</p></li>
+<li><p>client_body_temp_path: 临时文件存放目录，这个是存储body信息的。</p></li>
+<li><p>client_body_in_file_only : 请求的包体是否保留的文件中，on必须写的， clean: 处理完毕后删除， off: 非常小，buffer_size 如果够的话，就不写了。</p></li>
+<li><p>client_body_timeout : 两次读取body的最大时延，返回418错误。</p></li>
+</ul>
+</section>
+<section id="id11">
+<h2><span class="section-number">4.15. </span>向上游建立连接<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_connect_timeout 建立连接，如果超时，502</p></li>
+<li><p>proxy_next_upstream : 特定错误后，可以换一个机器进行调度响应。</p></li>
+<li><p>proxy_socket_keepalive: 保持连接。</p></li>
+<li><p>keepalive: 控制数量</p></li>
+<li><p>keepalive_requests: 控制连接复用次数</p></li>
+<li><p>proxy_bind: 修改源地址。如果非本机地址，需要transparent的参数辅助的。</p></li>
+<li><p>proxy-ignore_client_abort: 客户端和nginx如果取消了， nginx和后端的连接是否断开。</p></li>
+<li><p>proxy_send_timeout : 发送请求的超时时间。</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html" class="btn btn-neutral float-left" title="3. nginx的http模块" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, zhaojiedi1992@outlook.com.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,273 @@
+负载均衡
+==========================================
+
+nginx扩展方式
+------------------------------------
+
+- 基于url对功能进行分发
+- 基于rr算法进行水平扩展
+- 基于ip地址映射到特定ip或者集群
+
+支持的反向代理协议
+------------------------------------
+
+- udp 
+- tcp 
+- memcached
+- scgi 
+- uwsgi 
+- grpc 
+- http 
+- websocket 
+
+负载均衡基础指令
+------------------------------------
+
+指定上游服务地址， 通过upstream指令指定， 内部通过server指令指定server。
+server指定的地址， 可以是域名、ip、或者socket地址。不加端口默认是80端口。
+
+官方文档: https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream
+
+server片段重要参数说明
+
+- weight: 权重，默认是1 
+- max_conns: 最大活动连接数量，默认是0，也就是不限制。
+- max_fails: 最大失败次数，也就是在fail_timeout这个时间内，如果出现max_fails次数的话，对应的server就不会再次被选择。
+- fail_timeout: 默认是10s
+- backup: 备用， 如果所有的主都不可用才使用这个的。
+- down: 表示这个机器永远不要调度。
+- resolve: 解析域名到地址的。必须使用共享内存的。1.5.12之后才支持动态感知域名变化的。
+
+对上游服务使用长连接
+------------------------------------
+
+降低ningx与上游服务器的建立关闭连接的消耗，提升吞吐量的同事降低延迟。
+
+http1.1才支持， 需要加入如下设置。
+
+.. code-block:: bash 
+
+     proxy_http_version 1.1;
+     proxy_set_header Connection "";
+
+主要参数说明
+
+- keepalive : 指定次数。
+- keepalive_requests: 一个连接最多使用的req 
+- keepalive_timeout: 一个连接最多使用的时间
+
+
+轮训配置样例
+------------------------------------
+
+这里我先使用一个nginx启动了server， 测试如下
+
+.. code-block:: bash 
+
+    [root@zhaojiedi-elk-2 nginx]# curl 127.0.0.1:8001
+    8001 s1
+    [root@zhaojiedi-elk-2 nginx]# curl 127.0.0.1:8002
+    8002 s2
+
+配置样例
+
+
+.. literalinclude:: ../files/rr.conf
+   :encoding: utf-8
+   :language: text
+
+测试结果
+
+.. code-block:: bash 
+
+    [root@zhaojiedi-elk-2 conf]# curl http://n-rrups.linuxpanda.tech
+    8001 s1
+    [root@zhaojiedi-elk-2 conf]# curl http://n-rrups.linuxpanda.tech
+    8002 s2
+    [root@zhaojiedi-elk-2 conf]# curl http://n-rrups.linuxpanda.tech
+    8001 s1
+    [root@zhaojiedi-elk-2 conf]# curl http://n-rrups.linuxpanda.tech
+    8001 s1
+    [root@zhaojiedi-elk-2 conf]# curl http://n-rrups.linuxpanda.tech
+    8002 s2
+
+启用了keepalive 我们看下tcpdump 抓包的结果
+
+.. code-block:: bash 
+
+    [root@zhaojiedi-elk-2 ~]# tcpdump -i lo port 8001 -n
+    tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+    listening on lo, link-type EN10MB (Ethernet), capture size 262144 bytes
+
+    16:20:09.756199 IP 127.0.0.1.42492 > 127.0.0.1.vcom-tunnel: Flags [S], seq 1693123386, win 43690, options [mss 65495,sackOK,TS val 299254666 ecr 0,nop,wscale 7], length 0
+    le 7], length 0
+    16:20:09.756220 IP 127.0.0.1.42492 > 127.0.0.1.vcom-tunnel: Flags [.], ack 1, win 342, options [nop,nop,TS val 299254666 ecr 299254666], length 0
+    16:20:09.756262 IP 127.0.0.1.42492 > 127.0.0.1.vcom-tunnel: Flags [P.], seq 1:70, ack 1, win 342, options [nop,nop,TS val 299254666 ecr 299254666], length 69
+    16:20:09.756266 IP 127.0.0.1.vcom-tunnel > 127.0.0.1.42492: Flags [.], ack 70, win 342, options [nop,nop,TS val 299254666 ecr 299254666], length 0
+    16:20:09.756357 IP 127.0.0.1.vcom-tunnel > 127.0.0.1.42492: Flags [P.], seq 1:171, ack 70, win 342, options [nop,nop,TS val 299254666 ecr 299254666], length 170
+    16:20:09.756361 IP 127.0.0.1.42492 > 127.0.0.1.vcom-tunnel: Flags [.], ack 171, win 350, options [nop,nop,TS val 299254666 ecr 299254666], length 0
+    -----下面是第二次的。
+    16:20:35.599901 IP 127.0.0.1.42492 > 127.0.0.1.vcom-tunnel: Flags [P.], seq 70:139, ack 171, win 350, options [nop,nop,TS val 299280510 ecr 299254666], length 69
+    16:20:35.600018 IP 127.0.0.1.vcom-tunnel > 127.0.0.1.42492: Flags [P.], seq 171:341, ack 139, win 342, options [nop,nop,TS val 299280510 ecr 299280510], length 170
+    16:20:35.600028 IP 127.0.0.1.42492 > 127.0.0.1.vcom-tunnel: Flags [.], ack 341, win 359, options [nop,nop,TS val 299280510 ecr 299280510], length 0
+
+可以看到第一次是三次握手了， 但是是没有F的falgs的，也就是关闭连接的， 接下里curl的直接传输了。 
+
+反向代理的hash算法
+------------------------------------
+对于ipv4地址使用前面3个字节作为关键字，对ipv6使用完整的地址。通过ip_hash 进行配置。
+
+当然也可以通过hash key 方式配置非ip方式的。
+
+
+官方文档： https://nginx.org/en/docs/http/ngx_http_upstream_module.html#ip_hash
+
+配置ip_hash
+
+.. literalinclude:: ../files/hash.conf
+   :encoding: utf-8
+   :language: text
+
+验证1 ip_hash 
+
+.. code-block:: bash 
+
+    [root@zhaojiedi-elk-2 nginx]# curl http://n-hash.linuxpanda.tech:8084 -H "X-Forwarded-For: 1.1.1.1"
+    8001 s1
+    [root@zhaojiedi-elk-2 nginx]# curl http://n-hash.linuxpanda.tech:8084 -H "X-Forwarded-For: 1.1.1.1"
+    8001 s1
+    [root@zhaojiedi-elk-2 nginx]# curl http://n-hash.linuxpanda.tech:8084 -H "X-Forwarded-For: 1.1.1.1"
+    8001 s1
+    [root@zhaojiedi-elk-2 nginx]# curl http://n-hash.linuxpanda.tech:8084 -H "X-Forwarded-For: 1.1.1.1"
+    8001 s1
+    [root@zhaojiedi-elk-2 nginx]# curl http://n-hash.linuxpanda.tech:8084 -H "X-Forwarded-For: 1.1.1.1"
+    8001 s1
+
+验证1 hash key 
+
+.. code-block:: bash
+
+    [zhaojiedi_dxm@instance-pu4usb9a ~]$ curl http://n-hash.linuxpanda.tech:8084?username=abc
+    8001 s1
+    [zhaojiedi_dxm@instance-pu4usb9a ~]$ curl http://n-hash.linuxpanda.tech:8084?username=abc
+    8001 s1
+    [zhaojiedi_dxm@instance-pu4usb9a ~]$ curl http://n-hash.linuxpanda.tech:8084?username=abc
+    8001 s1
+    [zhaojiedi_dxm@instance-pu4usb9a ~]$ curl http://n-hash.linuxpanda.tech:8084?username=deaaa
+    8002 s2
+    [zhaojiedi_dxm@instance-pu4usb9a ~]$ curl http://n-hash.linuxpanda.tech:8084?username=deaaa
+    8002 s2
+    [zhaojiedi_dxm@instance-pu4usb9a ~]$ curl http://n-hash.linuxpanda.tech:8084?username=deaaa
+    8002 s2
+
+
+一致性hash算法
+------------------------------------
+通过hash key consistent 即可。 
+
+
+连接做少的上游服务器
+------------------------------------
+
+
+upsteam共享内存
+------------------------------------
+使用共享内存可以将upstream定义的策略数据，状态数据放到共享内存中，对所有worker进程生效。
+
+upsteam模块提供的变量
+------------------------------------
+
+- upstream_addr: 地址
+- upstream_connect_time: 建立了解消耗时间
+- upstream_header_time: 接收上游的头部需要的时间
+- upstream_response_time: 完整耗时
+- upstream_bytes_received: 响应长度
+- upstream_response_length: 包体长度
+- upstream_status: 上游的状态吗， 如果没有连接上，502
+- upstream_cookie_名称: 上游返回的set_cookie取出的值。
+
+http反向代理的处理流程
+------------------------------------
+
+.. image:: ../images/nginx25.png
+
+
+proxy模块的基本使用
+------------------------------------
+
+这个模块是支持http和https协议2种类型的代理的， 
+proxy 后面的url必须以http或者https开头， 接下来是域名、ip 、socket或者upstream名字。前面2个是可以添加端口的。 
+
+如果url参数带不带uri差异是比较大的。 
+- 不携带uri: 直接转发给上游
+- 携带uri: 将location匹配的部分进行替换。
+
+
+提前准备一个后端
+.. code-block:: bash 
+
+    server {
+            listen 8001 ;
+            location / {
+                    return 200 '8001 s1\r\n uri=$uri \r\n';
+            }
+    }
+
+
+.. literalinclude:: ../files/proxy.conf
+   :encoding: utf-8
+   :language: text
+
+验证一下
+
+.. code-block:: bash 
+
+    # 不带uri方式的。 
+    [root@zhaojiedi-elk-2 conf]# curl http://n-proxy.linuxpanda.tech:8084/a/b/c/d/e/f
+    8001 s1
+    uri=/a/b/c/d/e/f
+    [root@zhaojiedi-elk-2 conf]# curl http://n-proxy.linuxpanda.tech:8084/a/b/c/def
+    8001 s1
+    uri=/a/b/c/def   
+
+    # 带uri方式的。
+    [root@zhaojiedi-elk-2 conf]# curl http://n-proxy.linuxpanda.tech:8084/a/b/c/def
+    8001 s1
+    uri=/panda/def
+    [root@zhaojiedi-elk-2 conf]# curl http://n-proxy.linuxpanda.tech:8084/a/b/c/d/e/f
+    8001 s1
+    uri=/panda/d/e/f
+
+
+修改向后端的请求行
+------------------------------------
+
+- proxy_method: 修改请求方法
+- proxy_http_version: 修改协议版本。
+- proxy_set_header field value: 修改请求头部。
+- proxy_pass_request_header： 用户的header是否发送。
+- proxy_pass_request_body: body是否发送
+- proxy_set_body: 自定义body方式。
+
+接收客户端请求的包体
+------------------------------------
+- proxy_request_buffering 控制收完在转发还是边收边转发。
+- client_max_body_size: 仅仅对头部含有Content-Length有效超过最大长度后，返回413错误。
+- client_body_temp_path: 临时文件存放目录，这个是存储body信息的。
+- client_body_in_file_only : 请求的包体是否保留的文件中，on必须写的， clean: 处理完毕后删除， off: 非常小，buffer_size 如果够的话，就不写了。
+- client_body_timeout : 两次读取body的最大时延，返回418错误。
+
+
+向上游建立连接
+------------------------------------
+
+- proxy_connect_timeout 建立连接，如果超时，502
+- proxy_next_upstream : 特定错误后，可以换一个机器进行调度响应。
+- proxy_socket_keepalive: 保持连接。
+- keepalive: 控制数量
+- keepalive_requests: 控制连接复用次数
+- proxy_bind: 修改源地址。如果非本机地址，需要transparent的参数辅助的。 
+- proxy-ignore_client_abort: 客户端和nginx如果取消了， nginx和后端的连接是否断开。
+- proxy_send_timeout : 发送请求的超时时间。
+
+

@@ -993,14 +993,15 @@ map的能力更像其他语言的switch功能， 通过case 1 case 2 命中不�
 
 .. code-block:: bash 
 
-map $http_host $name {
-  hostnames;
-  default 0;
-  ~map\.tao\w+\.org.cn 1; 
-  \*.linuxpanda.org.cn 2;
-  map.linuxpanda.tech 3;
-  map.linuxpanda.* 4 ;
-}
+  map $http_host $name {
+    hostnames;
+    default 0;
+    ~map\.tao\w+\.org.cn 1; 
+    \*.linuxpanda.org.cn 2;
+    map.linuxpanda.tech 3;
+    map.linuxpanda.* 4 ;
+  }
+
 和其他的语言的switch case不一样， 一个一个按照顺序去匹配， 这个匹配顺序是这样的。 
 
 - 字符串严格匹配
