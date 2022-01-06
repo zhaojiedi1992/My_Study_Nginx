@@ -96,7 +96,8 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="nginx/01-%E5%88%9D%E8%AF%86nginx.html#ssl">1.10. SSL发展</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx/01-%E5%88%9D%E8%AF%86nginx.html#id14">1.11. SSL通信过程</a></li>
-<li class="toctree-l2"><a class="reference internal" href="nginx/01-%E5%88%9D%E8%AF%86nginx.html#openresty-lua">1.12. openresty+lua样例</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/01-%E5%88%9D%E8%AF%86nginx.html#id15">1.12. 配置证书</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/01-%E5%88%9D%E8%AF%86nginx.html#openresty-lua">1.13. openresty+lua样例</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="nginx/02-nginx%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80.html">2. nginx架构基础</a><ul>
@@ -159,14 +160,14 @@
 <li class="toctree-l2"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#auto-index">3.33. auto index 模块</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#log">3.34. log阶段</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#id12">3.35. 替换响应中的字符串</a></li>
-<li class="toctree-l2"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#id15">3.36. 在相应的前后添加内容</a></li>
-<li class="toctree-l2"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#id16">3.37. 变量的惰性求值</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#id13">3.36. 在相应的前后添加内容</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#id14">3.37. 变量的惰性求值</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#http">3.38. http框架使用的常用变量</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#id17">3.38.1. http请求相关的变量</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#id15">3.38.1. http请求相关的变量</a></li>
 <li class="toctree-l3"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#tcp">3.38.2. tcp连接相关的变量</a></li>
 <li class="toctree-l3"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#nginx">3.38.3. nginx处理请求过程中产生的变量</a></li>
-<li class="toctree-l3"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#id18">3.38.4. 发送http响应时相关的变量</a></li>
-<li class="toctree-l3"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#id19">3.38.5. nginx系统变量</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#id16">3.38.4. 发送http响应时相关的变量</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#id17">3.38.5. nginx系统变量</a></li>
 <li class="toctree-l3"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html#referer">3.38.6. referer模块</a></li>
 </ul>
 </li>
@@ -194,6 +195,12 @@
 <li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id9">4.13. 修改向后端的请求行</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id10">4.14. 接收客户端请求的包体</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id11">4.15. 向上游建立连接</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id12">4.16. 接收上游的响应头部</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id13">4.17. 接收上游的包体</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id14">4.18. 接受上游网络速度相关指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id15">4.19. 包体持久化</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id16">4.20. 加工响应头部</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id17">4.21. 上游返回错误的处理办法</a></li>
 </ul>
 </li>
 </ul>

@@ -769,7 +769,8 @@ log模块是将http请求相关信息记录到日志中，无法被禁用。
 - sub_filter: 替换命令
 - sub_filter_once： 只替换一次
 - sub_filter_last_modified： 是否展示Last-Modified响应头， 默认是off的，也就是这个header被移除的。 
-- sub_filter_types: 哪些类型文件才替换，默认是html，*表示所有类型。
+- sub_filter_types: 哪些类型文件才替换，默认是html，\*表示所有类型。
+
 
 样例配置如下
 

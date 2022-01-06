@@ -57,6 +57,12 @@
 <li class="toctree-l2"><a class="reference internal" href="#id9">4.13. 修改向后端的请求行</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id10">4.14. 接收客户端请求的包体</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#id11">4.15. 向上游建立连接</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id12">4.16. 接收上游的响应头部</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id13">4.17. 接收上游的包体</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id14">4.18. 接受上游网络速度相关指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id15">4.19. 包体持久化</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id16">4.20. 加工响应头部</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id17">4.21. 上游返回错误的处理办法</a></li>
 </ul>
 </li>
 </ul>
@@ -296,20 +302,15 @@ proxy 后面的url必须以http或者https开头， 接下来是域名、ip 、s
 <p>如果url参数带不带uri差异是比较大的。
 - 不携带uri: 直接转发给上游
 - 携带uri: 将location匹配的部分进行替换。</p>
-<p>提前准备一个后端
-.. code-block:: bash</p>
-<blockquote>
-<div><dl>
-<dt>server {</dt><dd><p>listen 8001 ;
-location / {</p>
-<blockquote>
-<div><p>return 200 ‘8001 s1rn uri=$uri rn’;</p>
-</div></blockquote>
-<p>}</p>
-</dd>
-</dl>
-<p>}</p>
-</div></blockquote>
+<p>提前准备一个后端</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>server <span class="o">{</span>
+        listen <span class="m">8001</span> <span class="p">;</span>
+        location / <span class="o">{</span>
+                <span class="k">return</span> <span class="m">200</span> <span class="s1">&#39;8001 s1\r\n uri=$uri \r\n&#39;</span><span class="p">;</span>
+        <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>upstream r1 {
 	server 127.0.0.1:8001;
 }
@@ -379,6 +380,58 @@ server {
 <li><p>proxy_bind: 修改源地址。如果非本机地址，需要transparent的参数辅助的。</p></li>
 <li><p>proxy-ignore_client_abort: 客户端和nginx如果取消了， nginx和后端的连接是否断开。</p></li>
 <li><p>proxy_send_timeout : 发送请求的超时时间。</p></li>
+</ul>
+</section>
+<section id="id12">
+<h2><span class="section-number">4.16. </span>接收上游的响应头部<a class="headerlink" href="#id12" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_buffer_size 是用来存放对应响应头部的，如果比较大，errlog会出现upstream send too big header。</p></li>
+<li><p>proxy_buffering ： 接收完整的响应包体，这个基本同proxy_request_buffering.</p></li>
+</ul>
+</section>
+<section id="id13">
+<h2><span class="section-number">4.17. </span>接收上游的包体<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_buffers 这个用于存放上游的http包体大小，8 8k参数是如果8k足够就只分配1个8k的， 不够继续分配，最多8个8k。</p></li>
+<li><p>proxy_buffering:</p></li>
+<li><p>proxy_max_temp_file_size: 写入磁盘的文件的最大值。</p></li>
+<li><p>proxy_temp_file_write_size: 每次写入字节限制。</p></li>
+<li><p>proxy_temp_path: 指定临时文件目录和存储级别。</p></li>
+<li><p>proxy_busy_buffers_size: 及时转发包体</p></li>
+</ul>
+</section>
+<section id="id14">
+<h2><span class="section-number">4.18. </span>接受上游网络速度相关指令<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_read_timeout: 2次读取超时时间。</p></li>
+<li><p>proxy_limit_rate: 读取上游的速率。</p></li>
+</ul>
+</section>
+<section id="id15">
+<h2><span class="section-number">4.19. </span>包体持久化<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_store_access: 定义临时文件持久化， 权限设置。</p></li>
+<li><p>proxy_store: 可以使用变量控制存放位置。</p></li>
+</ul>
+</section>
+<section id="id16">
+<h2><span class="section-number">4.20. </span>加工响应头部<a class="headerlink" href="#id16" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_ignore_header: 禁用特定字段。</p></li>
+<li><p>proxy_hide_header: 不转发某些头部。</p></li>
+<li><p>porxy_pass_header： 允许哪些头部发送。</p></li>
+<li><p>proxy_cookie_domain: 修改域名</p></li>
+<li><p>proxy_cookie_path: 修改path</p></li>
+<li><p>proxy_redirect: 重定向url</p></li>
+</ul>
+</section>
+<section id="id17">
+<h2><span class="section-number">4.21. </span>上游返回错误的处理办法<a class="headerlink" href="#id17" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_next_upstream: 在没有想客户端发送任何内容的时候，就错误的才重新选择新的机器。</p></li>
+<li><p>proxy_next_upstream_timeout: 重试的时间</p></li>
+<li><p>proxy_next_upstream_tries: 重试的次数。</p></li>
+<li><p>proxy_intercept_erros: 是否拦截上游失败响应，如果上游响应&gt;=300的视乎，启用这个选项的话， error_page就会生效了。</p></li>
 </ul>
 </section>
 </section>

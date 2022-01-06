@@ -204,6 +204,7 @@ proxy 后面的url必须以http或者https开头， 接下来是域名、ip 、s
 
 
 提前准备一个后端
+
 .. code-block:: bash 
 
     server {
@@ -269,5 +270,54 @@ proxy 后面的url必须以http或者https开头， 接下来是域名、ip 、s
 - proxy_bind: 修改源地址。如果非本机地址，需要transparent的参数辅助的。 
 - proxy-ignore_client_abort: 客户端和nginx如果取消了， nginx和后端的连接是否断开。
 - proxy_send_timeout : 发送请求的超时时间。
+
+
+接收上游的响应头部
+------------------------------------
+
+- proxy_buffer_size 是用来存放对应响应头部的，如果比较大，errlog会出现upstream send too big header。
+- proxy_buffering ： 接收完整的响应包体，这个基本同proxy_request_buffering.
+
+接收上游的包体
+------------------------------------
+
+- proxy_buffers 这个用于存放上游的http包体大小，8 8k参数是如果8k足够就只分配1个8k的， 不够继续分配，最多8个8k。
+- proxy_buffering: 
+- proxy_max_temp_file_size: 写入磁盘的文件的最大值。
+- proxy_temp_file_write_size: 每次写入字节限制。
+- proxy_temp_path: 指定临时文件目录和存储级别。
+- proxy_busy_buffers_size: 及时转发包体
+
+接受上游网络速度相关指令
+------------------------------------
+
+- proxy_read_timeout: 2次读取超时时间。
+- proxy_limit_rate: 读取上游的速率。 
+
+
+包体持久化
+------------------------------------
+
+- proxy_store_access: 定义临时文件持久化， 权限设置。
+- proxy_store: 可以使用变量控制存放位置。
+
+加工响应头部
+------------------------------------
+
+- proxy_ignore_header: 禁用特定字段。
+- proxy_hide_header: 不转发某些头部。
+- porxy_pass_header： 允许哪些头部发送。
+- proxy_cookie_domain: 修改域名
+- proxy_cookie_path: 修改path
+- proxy_redirect: 重定向url 
+
+上游返回错误的处理办法
+------------------------------------
+
+- proxy_next_upstream: 在没有想客户端发送任何内容的时候，就错误的才重新选择新的机器。 
+- proxy_next_upstream_timeout: 重试的时间
+- proxy_next_upstream_tries: 重试的次数。
+- proxy_intercept_erros: 是否拦截上游失败响应，如果上游响应>=300的视乎，启用这个选项的话， error_page就会生效了。 
+
 
 
