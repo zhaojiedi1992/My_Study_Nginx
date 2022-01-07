@@ -268,7 +268,7 @@ proxy 后面的url必须以http或者https开头， 接下来是域名、ip 、s
 - keepalive: 控制数量
 - keepalive_requests: 控制连接复用次数
 - proxy_bind: 修改源地址。如果非本机地址，需要transparent的参数辅助的。 
-- proxy-ignore_client_abort: 客户端和nginx如果取消了， nginx和后端的连接是否断开。
+- proxy_ignore_client_abort: 客户端和nginx如果取消了， nginx和后端的连接是否断开。
 - proxy_send_timeout : 发送请求的超时时间。
 
 
@@ -319,5 +319,57 @@ proxy 后面的url必须以http或者https开头， 接下来是域名、ip 、s
 - proxy_next_upstream_tries: 重试的次数。
 - proxy_intercept_erros: 是否拦截上游失败响应，如果上游响应>=300的视乎，启用这个选项的话， error_page就会生效了。 
 
+
+准备工作
+
+.. code-block:: bash 
+
+    [root@zhaojiedi-elk-2 nginx]# cat /root/nginx/conf/sites/s1.conf
+    server {
+        listen 8001 ;
+        location / {
+            return 200 '8001 s1\r\n uri=$uri \r\n';
+        }
+    }
+    [root@zhaojiedi-elk-2 nginx]# cat /root/nginx/conf/sites/s2.conf
+    server {
+        listen 8002;
+        location / {
+            return 200 '8002 s2 \r\n';
+        }
+    }
+    [root@zhaojiedi-elk-2 nginx]# cat /root/nginx/conf/sites/s3.conf
+    server {
+        listen 8003;
+        location / {
+            return 502 ;
+        }
+    }
+
+openrestry配置如下
+
+
+.. literalinclude:: ../files/proxyc.conf
+   :encoding: utf-8
+   :language: text
+
+
+验证效果
+
+.. code-block:: bash 
+
+    [root@zhaojiedi-elk-2 nginx]# curl http://n-proxyc.linuxpanda.tech:8084/
+    8001 s1
+    uri=/
+    [root@zhaojiedi-elk-2 nginx]# curl http://n-proxyc.linuxpanda.tech:8084/
+    8002 s2
+    # 803是返回502的， 但是我们配置了next的，会调度到别的实例然后拿到结果。
+    [root@zhaojiedi-elk-2 nginx]# curl http://n-proxyc.linuxpanda.tech:8084/
+    8001 s1
+    uri=/
+    [root@zhaojiedi-elk-2 nginx]# tail -n 10 logs/access.log
+    porxy_host="ups" proxy_port="80" upstream_addr="127.0.0.1:8001" upstream_status="200"
+    porxy_host="ups" proxy_port="80" upstream_addr="127.0.0.1:8002" upstream_status="200"
+    porxy_host="ups" proxy_port="80" upstream_addr="127.0.0.1:8003, 127.0.0.1:8001" upstream_status="502, 200"
 
 
