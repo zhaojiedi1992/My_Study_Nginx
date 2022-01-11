@@ -373,3 +373,401 @@ openrestry配置如下
     porxy_host="ups" proxy_port="80" upstream_addr="127.0.0.1:8003, 127.0.0.1:8001" upstream_status="502, 200"
 
 
+ssl使用场景和双向认证
+------------------------------------
+
+.. image:: ../images/nginx26.png 
+
+官方文档： https://nginx.org/en/docs/http/ngx_http_ssl_module.html#directives
+
+几个主要连接相关变量
+
+- ssl_client_serial: 连接上的客户端序列号。
+- ssl_early_data: 在tls3使用early data 且握手为完成返回1 ，否则返回空。
+- ssl_client_verify: 验证失败返回failed:原因，成功返回Success.
+- ssl_session_reused: 如果session复用，返回r,否则为. 。
+
+准备相关证书
+
+
+.. code-block:: bash 
+
+    # 这里不多弄具体证书创建问题， 需要几个文件，
+    ca的pem文件
+    n-ssl1.linuxpanda.tech.key n-ssl1.linuxpanda.tech.crt
+    n-ssl2.linuxpanda.tech.key n-ssl2.linuxpanda.tech.crt
+
+    # 具体操作可以参考： https://www.linuxpanda.tech/en/latest/%E6%9D%82%E9%A1%B9/CA%E7%9A%84%E6%90%AD%E5%BB%BA.html
+    # 或者： https://www.cnblogs.com/zhaojiedi1992/p/zhaojiedi_linux_011_ca.html
+
+nginx配置
+
+.. literalinclude:: ../files/ssl1.conf
+   :encoding: utf-8
+   :language: text
+
+
+openrestry配置
+
+.. literalinclude:: ../files/ssl1.conf
+   :encoding: utf-8
+   :language: text
+
+验证测试
+
+.. code-block:: bash 
+
+    [root@zhaojiedi-elk-2 sites]# curl http://n-ssl2.linuxpanda.tech:8012/
+    ssl_early_data= ; ssl_client_verify=SUCCESS;
+
+
+浏览器缓存与nginx缓存
+------------------------------------
+    
+浏览器缓存
+    优点： 没有网络消耗，速度最快，即使有网络消耗也比较小。
+    缺点： 仅仅提升一个用户体验。
+nginx缓存： 
+    优点： 提升所有用户体验，有效降低后端负载，通过304减少与上游的流量消耗。
+    缺点： 用户仍然保持网络消耗
+
+建议同时使用浏览器缓存和nginx缓存。
+
+.. image:: ../images/nginx28.png
+
+etag
+------------------------------------
+根据文件的修改时间和大小生成。
+
+if-none-match
+------------------------------------
+它的原理是这样的，当浏览器请求服务器的某项资源(A)时, 服务器根据A算出一个哈希值(3f80f-1b6-3e1cb03b)并通过 ETag 返回给浏览器，
+浏览器把"3f80f-1b6-3e1cb03b" 和 A 同时缓存在本地，当下次再次向服务器请求A时，会通过类似 If-None-Match: "3f80f-1b6-3e1cb03b" 
+的请求头把ETag发送给服务器，服务器再次计算A的哈希值并和浏览器返回的值做比较，如果发现A发生了变化就把A返回给浏览器(200)，如果发现A没有变化就给浏览器返回一个304未修改。
+这样通过控制浏览器端的缓存，可以节省服务器的带宽，因为服务器不需要每次都把全量数据返回给客户端。
+
+具体参考： https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/If-None-Match
+
+if-modified-since头部
+------------------------------------
+如果没有超过日期，就返回304，超过就返回200，具体内容就返回。
+
+.. warning:: 如何和if-None-Match一同使用的时候，这个since是不生效的，除非服务器不支持Match的。
+
+
+nginx判定缓存是否过期
+------------------------------------
+
+expire指令： 
+
+- max: 最大的值。cache-control基本10年。
+- off,不添加或者修改过期和cache-control字段。
+- epoch 不设置缓存
+- time 设置具体时间， @18h30m 
+
+
+准备几个文件
+
+.. code-block:: bash 
+
+    [root@zhaojiedi-elk-2 html]# for i in $(seq 1 7) ; do mkdir dir$i;  echo "this is dir$i" >> dir$i/index.html; done
+    [root@zhaojiedi-elk-2 html]# tree
+    .
+    ├── 50x.html
+    ├── dir1
+    │   └── index.html
+    ├── dir2
+    │   └── index.html
+    ├── dir3
+    │   └── index.html
+    ├── dir4
+    │   └── index.html
+    ├── dir5
+    │   └── index.html
+    ├── dir6
+    │   └── index.html
+    ├── dir7
+    │   └── index.html
+    └── index.html
+
+
+nginx配置样例
+
+
+.. literalinclude:: ../files/cache.conf
+   :encoding: utf-8
+   :language: text
+
+
+这里对集中情况进行验证
+
+.. code-block:: bash
+
+    # 案例1，max， 可以看到结果max-age是10年的
+    [root@zhaojiedi-elk-2 conf]# curl http://n-cache.linuxpanda.tech:8084/dir1/index.html -IL
+    HTTP/1.1 200 OK
+    Server: openresty/1.19.9.1 (no pool)
+    Date: Tue, 11 Jan 2022 03:49:14 GMT
+    Content-Type: text/html
+    Content-Length: 13
+    Last-Modified: Tue, 11 Jan 2022 03:45:37 GMT
+    Connection: keep-alive
+    ETag: "61dcfd61-d"
+    Expires: Thu, 31 Dec 2037 23:55:55 GMT
+    Cache-Control: max-age=315360000
+    Accept-Ranges: bytes
+
+    #案例2 我当前是11:50的，我设置15h30m 具体这个时间大概220分钟=（3小时 40分钟）
+    [root@zhaojiedi-elk-2 conf]# curl http://n-cache.linuxpanda.tech:8084/dir2/index.html -IL
+    HTTP/1.1 200 OK
+    Server: openresty/1.19.9.1 (no pool)
+    Date: Tue, 11 Jan 2022 03:50:00 GMT
+    Content-Type: text/html
+    Content-Length: 13
+    Last-Modified: Tue, 11 Jan 2022 03:45:37 GMT
+    Connection: keep-alive
+    ETag: "61dcfd61-d"
+    Expires: Tue, 11 Jan 2022 07:30:00 GMT
+    Cache-Control: max-age=13200
+    Accept-Ranges: bytes
+
+    #案例3 根据modify修改时间，加一个时间。
+    [root@zhaojiedi-elk-2 conf]# curl http://n-cache.linuxpanda.tech:8084/dir3/index.html -IL
+    HTTP/1.1 200 OK
+    Server: openresty/1.19.9.1 (no pool)
+    Date: Tue, 11 Jan 2022 03:52:56 GMT
+    Content-Type: text/html
+    Content-Length: 13
+    Last-Modified: Tue, 11 Jan 2022 03:45:37 GMT
+    Connection: keep-alive
+    ETag: "61dcfd61-d"
+    Expires: Wed, 12 Jan 2022 03:45:37 GMT
+    Cache-Control: max-age=85961
+    Accept-Ranges: bytes
+
+    [root@zhaojiedi-elk-2 conf]# ll ../html/dir3/index.html
+    -rw-r--r-- 1 root root 13 Jan 11 11:45 ../html/dir3/index.html
+
+    # 案例4 max-age=0
+    [root@zhaojiedi-elk-2 conf]# curl http://n-cache.linuxpanda.tech:8084/dir4/index.html -IL
+    HTTP/1.1 200 OK
+    Server: openresty/1.19.9.1 (no pool)
+    Date: Tue, 11 Jan 2022 03:53:43 GMT
+    Content-Type: text/html
+    Content-Length: 13
+    Last-Modified: Tue, 11 Jan 2022 03:45:37 GMT
+    Connection: keep-alive
+    ETag: "61dcfd61-d"
+    Expires: Tue, 11 Jan 2022 03:53:43 GMT
+    Cache-Control: max-age=0
+    Accept-Ranges: bytes
+    # 案例5 设置负数表示no-cache
+    [root@zhaojiedi-elk-2 conf]# curl http://n-cache.linuxpanda.tech:8084/dir5/index.html -IL
+    HTTP/1.1 200 OK
+    Server: openresty/1.19.9.1 (no pool)
+    Date: Tue, 11 Jan 2022 03:54:39 GMT
+    Content-Type: text/html
+    Content-Length: 13
+    Last-Modified: Tue, 11 Jan 2022 03:45:37 GMT
+    Connection: keep-alive
+    ETag: "61dcfd61-d"
+    Expires: Tue, 11 Jan 2022 03:54:38 GMT
+    Cache-Control: no-cache
+    Accept-Ranges: bytes
+    # 案例6 
+    [root@zhaojiedi-elk-2 conf]# curl http://n-cache.linuxpanda.tech:8084/dir6/index.html -IL
+    HTTP/1.1 200 OK
+    Server: openresty/1.19.9.1 (no pool)
+    Date: Tue, 11 Jan 2022 03:55:34 GMT
+    Content-Type: text/html
+    Content-Length: 13
+    Last-Modified: Tue, 11 Jan 2022 03:45:37 GMT
+    Connection: keep-alive
+    ETag: "61dcfd61-d"
+    Expires: Thu, 01 Jan 1970 00:00:01 GMT
+    Cache-Control: no-cache
+    Accept-Ranges: bytes
+
+
+not_modified
+------------------------------------
+客户端拥有缓存，但是不确定缓存是否过期，请求闯入if-none-match或者if-modified-since 头部， 该模块通过将改值与响应中的last-modified值进行比较，
+决定是否返回200还是仅仅302 notmodified头部。
+
+.. image:: ../images/nginx29.png
+
+
+nginx缓存：定义存放的载体
+------------------------------------
+
+- proxy_cache zone： 定义使用哪个zone
+- proxy_cache_path: 定义zone
+
+proxy_cache_path指令详细参数
+
+- path： 定义目录
+- level: 目录级别
+- use_temp_path: 定义临时目录
+- keys_zone: name定义共享内存名字，size是共享内存大小 1MB大约可以存放8k key 
+- inactive: 在特定时间没有被访问就会被淘汰掉， 默认10min
+- max_size: 设置最大的缓存文件大小，超出后按照lru淘汰。
+- manager_files: 淘汰的最大文件数量 默认100 
+- manager_sleep: 淘汰一次后的休眠时间
+- manager_threshold: 执行一次的最大耗时，默认50ms
+- loader_files: 载入磁盘文件到共享内存的批处理文件数量，默认100
+- loader_sleep: 执行一次缓存文件到共享内存后，进程的休眠时间。
+- loader_threshold: 每次载入文件的最大耗时，默认50ms
+
+定义缓存的key
+------------------------------------
+
+proxy_cache_key : 可以使用变量，定义缓存的key
+
+缓存什么请求
+------------------------------------
+proxy_cache_valid: 
+
+不缓存什么内存
+------------------------------------
+
+- proxy_no_cache : 参数为真的时候，响应不存入缓存
+- porxy_cache_bypass: 参数为真，不使用缓存内容。
+
+upstrream_cache_status变量
+------------------------------------
+
+- MISS 未命中
+- HIT 命中缓存
+- EXPIRED 缓存已经过期
+- STALE 命中陈旧缓存
+- UPDATING 内容陈旧单正在更新
+- REVALIDATED nginx验证陈旧内容依然有效
+- BYPASS 响应是从原始服务器获得的。
+
+nginx后端配置
+
+.. literalinclude:: ../files/s4.conf
+   :encoding: utf-8
+   :language: text
+
+
+openrestry 配置
+
+.. literalinclude:: ../files/cachec.conf
+   :encoding: utf-8
+   :language: text
+
+验证结果
+
+.. code-block:: bash 
+
+    curl http://n-cachec.linuxpanda.tech:8084/index.html  -IL
+    HTTP/1.1 200 OK
+    Server: openresty/1.19.9.1 (no pool)
+    Date: Tue, 11 Jan 2022 07:43:32 GMT
+    Content-Type: text/html
+    Content-Length: 612
+    Connection: keep-alive
+    Last-Modified: Mon, 29 Nov 2021 07:50:00 GMT
+    ETag: "61a48628-264"
+    X-Cache-Status: MISS
+    Accept-Ranges: bytes
+
+    [root@zhaojiedi-elk-2 conf]# curl http://n-cachec.linuxpanda.tech:8084/index.html  -IL
+    HTTP/1.1 200 OK
+    Server: openresty/1.19.9.1 (no pool)
+    Date: Tue, 11 Jan 2022 07:43:35 GMT
+    Content-Type: text/html
+    Content-Length: 612
+    Connection: keep-alive
+    Last-Modified: Mon, 29 Nov 2021 07:50:00 GMT
+    ETag: "61a48628-264"
+    X-Cache-Status: HIT
+    Accept-Ranges: bytes
+
+    [root@zhaojiedi-elk-2 sites]# !tree
+    tree /root/openresty/nginx/cache/
+    /root/openresty/nginx/cache/
+    └── 0a
+        └── 0d
+            └── 3fc7ad9511bc116105001aa24d260d0a
+
+    2 directories, 1 file
+    [root@zhaojiedi-elk-2 sites]# cat /root/openresty/nginx/cache/0a/0d/3fc7ad9511bc116105001aa24d260d0a
+
+缓存流程 发起请求部分
+------------------------------------
+
+.. image:: ../images/nginx30.png
+
+
+缓存流程 接手上游响应
+------------------------------------
+
+.. image:: ../images/nginx31.png
+
+
+如何减轻上游压力
+------------------------------------
+
+1. 合并回源请求 proxy_cache_lock on 同一个时间只能有1个请求。 proxy_cache_lock_timeout: 等待第一个多久， proxy_cache_lock_age: 上一个请求的超时时间。
+2. 使用久缓存返回 proxy_cache_use_stale updating proxy_cache_backgroupd_update on 。
+3. proxy——cache_revalidate on 在请求上游的时候会带header if-modified_since if-none-match等，没有变化就是304减少传输。
+
+
+及时清理缓存
+------------------------------------
+官方的开源是不支持的，plus nginx是支持的， 这里有个模块，可以编译进来。
+https://github.com/FRiCKLE/ngx_cache_purge
+
+
+七层反向代理对照表
+------------------------------------
+
+redis反向代理
+------------------------------------
+将http请求转换为redis协议中的get请求转发到上游memcached服务中。
+
+配置如下
+
+.. literalinclude:: ../files/redis.conf
+   :encoding: utf-8
+   :language: text
+
+样例验证
+
+.. code-block:: bash 
+
+    [root@zhaojiedi-elk-2 sites]# curl 'http://n-redis.linuxpanda.tech:8084/set?key=k1&val=v1'
+    +OK
+    [root@zhaojiedi-elk-2 sites]# curl 'http://n-redis.linuxpanda.tech:8084/get?key=k1'
+    $2
+    v1
+
+nginx实现websocket代理
+------------------------------------
+
+proxy模块提供
+官方参考 https://nginx.org/en/docs/http/websocket.html
+
+核心配置片段
+.. code-block:: bash 
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+
+
+配置
+
+.. literalinclude:: ../files/websocket.conf
+   :encoding: utf-8
+   :language: text
+
+验证
+
+.. image:: ../images/nginx32.png 
+
+如果配置证书的话， 就是wss协议了。 这个样例仅仅支持ws协议。
+
+
