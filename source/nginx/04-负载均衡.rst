@@ -771,3 +771,167 @@ proxy模块提供
 如果配置证书的话， 就是wss协议了。 这个样例仅仅支持ws协议。
 
 
+使用分片提升效率
+------------------------------------
+处理大文件的时候，每次都请求全部大小是很消耗资源的事情， 通过range方式配合slice方式即可请求特定部分。
+
+
+准备一个大文件
+
+.. code-block:: bash 
+
+    dd if=/dev/zero of=big.avi bs=1M count=88
+
+配置一个上游服务
+
+就是简单配置的静态集群的。
+
+配置openrestry
+
+.. literalinclude:: ../files/slice.conf
+   :encoding: utf-8
+   :language: text
+
+
+验证下
+
+.. code-block:: bash 
+
+    [root@zhaojiedi-elk-2 nginx]# curl http://n-slice.linuxpanda.tech:8084/big.avi -r 100-200
+    [root@zhaojiedi-elk-2 nginx]# tail -n 2 /root/openresty/nginx/logs/access.log
+    10.157.89.215 - - [12/Jan/2022:10:47:08 +0800] "GET /big.avi HTTP/1.1" 502 173 "-" "curl/7.29.0" "-"request_filename=/root/openresty/nginx/html/big.avi document_root=/root/openresty/nginx/html realpath_root=/root/openresty/nginx/html
+    10.157.89.215 - - [12/Jan/2022:10:47:55 +0800] "GET /big.avi HTTP/1.1" 206 101 "-" "curl/7.29.0" "-"request_filename=/root/openresty/nginx/html/big.avi document_root=/root/openresty/nginx/html realpath_root=/root/openresty/nginx/html
+    [root@zhaojiedi-elk-2 nginx]# tail -n 2 /root/nginx/logs/access.log
+    127.0.0.1 - - [11/Jan/2022:15:47:39 +0800] "GET /index.html HTTP/1.0" 200 612 "-" "curl/7.29.0"
+    127.0.0.1 - - [12/Jan/2022:10:47:55 +0800] "GET /big.avi HTTP/1.0" 200 92274688 "-" "curl/7.29.0"
+
+缓存优化-文件打开
+------------------------------------
+
+
+- open_file_cache: 打开文件缓存的个数，超过的个数使用lru算法。
+- open_file_cache_valid: 文件缓存的有效时间。
+- open_file_cache_errors: 是否缓存文件查询的错误信息。默认off.
+- open_file_cache_min_uses: 具体没有看明白文档。
+
+文件缓存都缓存什么内容
+
+- 文件句柄
+- 文件修改时间
+- 文件大小
+- 文件查询时候的错误信息(比如文件不能存在，或者没有权限)
+- 目录是否存在
+
+配置如下
+
+.. literalinclude:: ../files/openfilecache.conf
+   :encoding: utf-8
+   :language: text
+
+
+验证
+
+.. code-block:: bash 
+
+    # 这里找到对应nginx的work进程，看看这个具体进程的系统调用
+    [root@zhaojiedi-elk-2 ~]# strace -p 14160
+    strace: Process 14160 attached
+    # 默认卡在wait这个地方，等待连接请求
+    epoll_wait(13,[{EPOLLIN, {u32=44802384, u64=44802384}}], 512, -1) = 1
+    # 收到一个请求
+    accept4(11, {sa_family=AF_INET, sin_port=htons(40254), sin_addr=inet_addr("10.157.89.215")}, [112->16], SOCK_CLOEXEC|SOCK_NONBLOCK) = 4
+    epoll_ctl(13, EPOLL_CTL_ADD, 4, {EPOLLIN|EPOLLRDHUP|EPOLLET, {u32=44803080, u64=44803080}}) = 0
+    epoll_wait(13, [{EPOLLIN, {u32=44803080, u64=44803080}}], 512, 60000) = 1
+    # 接受头部
+    recvfrom(4, "GET / HTTP/1.1\r\nUser-Agent: curl"..., 1024, 0, NULL, NULL) = 100
+    # 写响应
+    writev(4, [{iov_base="HTTP/1.1 200 OK\r\nServer: openres"..., iov_len=255}], 1) = 255
+    # 发送文件body
+    sendfile(4, 5, [0] => [1129], 1129)     = 1129
+    lstat("/root", {st_mode=S_IFDIR|0550, st_size=4096, ...}) = 0
+    lstat("/root/openresty", {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+    lstat("/root/openresty/nginx", {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+    lstat("/root/openresty/nginx/html", {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+    write(3, "10.157.89.215 - - [12/Jan/2022:1"..., 232) = 232
+    setsockopt(4, SOL_TCP, TCP_NODELAY, [1], 4) = 0
+    epoll_wait(13, [{EPOLLIN|EPOLLRDHUP, {u32=44803080, u64=44803080}}], 512, 65000) = 1
+    recvfrom(4, "", 1024, 0, NULL, NULL)    = 0
+    close(4)                                = 0
+    epoll_wait(13,
+
+
+http2主要特性
+------------------------------------
+
+传输数据量大幅减少
+    二进制数据传输
+    标头压缩
+
+多路复用
+    消息优先级
+
+服务器消息推送
+    并行推送
+
+http2核心概念
+------------------------------------
+
+- 连接： 1个tcp连接
+- 流：一个双向流
+- 消息： 对应http的请求或者响应
+- 数据帧： 最小单位，以二进制压缩格存放http1中的内容。
+
+
+协议分层和多路复用
+------------------------------------
+
+.. image:: ../images/nginx33.png 
+
+传输是无序的，接收的时候组装。
+
+优先级1-255
+
+http2推送文件
+------------------------------------
+- http2_push_preload 跟进header指定， 上游服务器可以生成header.
+- http2_push 推送哪个url 
+- http2_push_max_number: 推送最大数
+- http2_recv_timeout: 如果超过这个时间没有收到请求就关闭
+- http2_idle_timeout: 超过这个时间，就关闭连接
+- http2_max_concurrent_pusher: 最大推送个数
+- http2_max-concurrent_streams: 最大并发流个数
+- http2_max_field_size： header最大大小
+- http2_max_requests: 一个连接最大请求个数
+
+nginx反向代理grpc
+------------------------------------
+
+stream模块处理的7个阶段
+
+- POST_ACCEPT 
+- PREACCESS
+- ACCESSS
+- SSL 
+- PREFEAD
+- CONTENT 
+- LOG 
+  
+nginx代理4层样例
+------------------------------------
+
+
+proxy_protocol 协议
+------------------------------------
+
+v1协议： 
+    proxy tcp4 ip1 ip2 port1 port2 \r\n 
+v2协议： 
+    签名+ version_command + 地址族+ 长度
+
+
+
+udp反向代理
+------------------------------------
+
+
+

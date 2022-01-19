@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6. openresty及nginx源码 &mdash; My_Study_Nginx v1.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="5. nginx优化" href="05-nginx%E4%BC%98%E5%8C%96.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> My_Study_Nginx
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">nginx</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="01-%E5%88%9D%E8%AF%86nginx.html">1. 初识nginx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="02-nginx%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80.html">2. nginx架构基础</a></li>
+<li class="toctree-l1"><a class="reference internal" href="03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html">3. nginx的http模块</a></li>
+<li class="toctree-l1"><a class="reference internal" href="04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html">4. 负载均衡</a></li>
+<li class="toctree-l1"><a class="reference internal" href="05-nginx%E4%BC%98%E5%8C%96.html">5. nginx优化</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">6. openresty及nginx源码</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id1">6.1. 第三方模块源码的快速阅读方法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#config">6.2. config结构</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nginx">6.3. nginx启动和退户回调方法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">6.4. nginx启动过程</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#master">6.5. master进程循环</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#work">6.6. work进程循环</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#http">6.7. http模块初始化</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#http11">6.8. http模块的11个阶段</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">6.9. 添加模块到11个阶段的常用方法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#if">6.10. if指令连续出现</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#coredump">6.11. coredump 核心转储文件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gdb">6.12. gdb的基本使用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#debug">6.13. debug定位问题</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#debugerror-log">6.14. 控制debug级别的error.log日志输出</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id6">6.15. debug日志分析</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">My_Study_Nginx</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><span class="section-number">6. </span>openresty及nginx源码</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/nginx/06-OpenRestyNginx和nginx源码.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="openrestynginx">
+<h1><span class="section-number">6. </span>openresty及nginx源码<a class="headerlink" href="#openrestynginx" title="Permalink to this headline"></a></h1>
+<section id="id1">
+<h2><span class="section-number">6.1. </span>第三方模块源码的快速阅读方法<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h2>
+<ol class="arabic simple">
+<li><p>分析模块提供的config文件</p></li>
+<li><p>分析nginx_module_t 模块</p></li>
+<li><p>分析nginx_commmand_t数组</p></li>
+<li><p>对于http模块，分析ngx_http_module_t</p></li>
+<li><p>分析模块生效方法。</p></li>
+</ol>
+</section>
+<section id="config">
+<h2><span class="section-number">6.2. </span>config结构<a class="headerlink" href="#config" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>ngx_addon_name: 定义模块名称</p></li>
+<li><p>HTTP_MODULES: 定义模块</p></li>
+<li><p>NGX_ADDON_SRCS: 哪些模块的源文件需要编译</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">ngx_addon_name</span><span class="o">=</span>ngx_http_headers_more_filter_module
+
+<span class="nv">HEADERS_MORE_SRCS</span><span class="o">=</span><span class="s2">&quot;                                                         \</span>
+<span class="s2">                </span><span class="nv">$ngx_addon_dir</span><span class="s2">/src/ngx_http_headers_more_filter_module.c    \</span>
+<span class="s2">                </span><span class="nv">$ngx_addon_dir</span><span class="s2">/src/ngx_http_headers_more_headers_out.c      \</span>
+<span class="s2">                </span><span class="nv">$ngx_addon_dir</span><span class="s2">/src/ngx_http_headers_more_headers_in.c       \</span>
+<span class="s2">                </span><span class="nv">$ngx_addon_dir</span><span class="s2">/src/ngx_http_headers_more_util.c             \</span>
+<span class="s2">                &quot;</span>
+
+<span class="nv">HEADERS_MORE_DEPS</span><span class="o">=</span><span class="s2">&quot;                                                         \</span>
+<span class="s2">                </span><span class="nv">$ngx_addon_dir</span><span class="s2">/src/ddebug.h                                 \</span>
+<span class="s2">                </span><span class="nv">$ngx_addon_dir</span><span class="s2">/src/ngx_http_headers_more_filter_module.h    \</span>
+<span class="s2">                </span><span class="nv">$ngx_addon_dir</span><span class="s2">/src/ngx_http_headers_more_headers_in.h       \</span>
+<span class="s2">                </span><span class="nv">$ngx_addon_dir</span><span class="s2">/src/ngx_http_headers_more_headers_out.h      \</span>
+<span class="s2">                </span><span class="nv">$ngx_addon_dir</span><span class="s2">/src/ngx_http_headers_more_headers_in.h       \</span>
+<span class="s2">                </span><span class="nv">$ngx_addon_dir</span><span class="s2">/src/ngx_http_headers_more_util.h             \</span>
+<span class="s2">                &quot;</span>
+
+<span class="k">if</span> <span class="nb">test</span> -n <span class="s2">&quot;</span><span class="nv">$ngx_module_link</span><span class="s2">&quot;</span><span class="p">;</span> <span class="k">then</span>
+    <span class="nv">ngx_module_type</span><span class="o">=</span>HTTP_AUX_FILTER
+    <span class="nv">ngx_module_name</span><span class="o">=</span><span class="nv">$ngx_addon_name</span>
+    <span class="nv">ngx_module_incs</span><span class="o">=</span>
+    <span class="nv">ngx_module_deps</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HEADERS_MORE_DEPS</span><span class="s2">&quot;</span>
+    <span class="nv">ngx_module_srcs</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HEADERS_MORE_SRCS</span><span class="s2">&quot;</span>
+    <span class="nv">ngx_module_libs</span><span class="o">=</span>
+
+    . auto/module
+<span class="k">else</span>
+    <span class="nv">HTTP_AUX_FILTER_MODULES</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HTTP_AUX_FILTER_MODULES</span><span class="s2"> </span><span class="nv">$ngx_addon_name</span><span class="s2">&quot;</span>
+    <span class="nv">NGX_ADDON_SRCS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$NGX_ADDON_SRCS</span><span class="s2"> </span><span class="nv">$HEADERS_MORE_SRCS</span><span class="s2">&quot;</span>
+    <span class="nv">NGX_ADDON_DEPS</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$NGX_ADDON_DEPS</span><span class="s2"> </span><span class="nv">$HEADERS_MORE_DEPS</span><span class="s2">&quot;</span>
+<span class="k">fi</span>
+</pre></div>
+</div>
+</section>
+<section id="nginx">
+<h2><span class="section-number">6.3. </span>nginx启动和退户回调方法<a class="headerlink" href="#nginx" title="Permalink to this headline"></a></h2>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="n">ngx_int_t</span><span class="w">           </span><span class="p">(</span><span class="o">*</span><span class="n">init_master</span><span class="p">)(</span><span class="n">ngx_log_t</span><span class="w"> </span><span class="o">*</span><span class="n">log</span><span class="p">);</span><span class="w"></span>
+
+<span class="n">ngx_int_t</span><span class="w">           </span><span class="p">(</span><span class="o">*</span><span class="n">init_module</span><span class="p">)(</span><span class="n">ngx_cycle_t</span><span class="w"> </span><span class="o">*</span><span class="n">cycle</span><span class="p">);</span><span class="w"></span>
+
+<span class="n">ngx_int_t</span><span class="w">           </span><span class="p">(</span><span class="o">*</span><span class="n">init_process</span><span class="p">)(</span><span class="n">ngx_cycle_t</span><span class="w"> </span><span class="o">*</span><span class="n">cycle</span><span class="p">);</span><span class="w"></span>
+<span class="n">ngx_int_t</span><span class="w">           </span><span class="p">(</span><span class="o">*</span><span class="n">init_thread</span><span class="p">)(</span><span class="n">ngx_cycle_t</span><span class="w"> </span><span class="o">*</span><span class="n">cycle</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w">                </span><span class="p">(</span><span class="o">*</span><span class="n">exit_thread</span><span class="p">)(</span><span class="n">ngx_cycle_t</span><span class="w"> </span><span class="o">*</span><span class="n">cycle</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w">                </span><span class="p">(</span><span class="o">*</span><span class="n">exit_process</span><span class="p">)(</span><span class="n">ngx_cycle_t</span><span class="w"> </span><span class="o">*</span><span class="n">cycle</span><span class="p">);</span><span class="w"></span>
+
+<span class="kt">void</span><span class="w">                </span><span class="p">(</span><span class="o">*</span><span class="n">exit_master</span><span class="p">)(</span><span class="n">ngx_cycle_t</span><span class="w"> </span><span class="o">*</span><span class="n">cycle</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h2><span class="section-number">6.4. </span>nginx启动过程<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx34.png" src="../_images/nginx34.png" />
+</section>
+<section id="master">
+<h2><span class="section-number">6.5. </span>master进程循环<a class="headerlink" href="#master" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx35.png" src="../_images/nginx35.png" />
+</section>
+<section id="work">
+<h2><span class="section-number">6.6. </span>work进程循环<a class="headerlink" href="#work" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx36.png" src="../_images/nginx36.png" />
+</section>
+<section id="http">
+<h2><span class="section-number">6.7. </span>http模块初始化<a class="headerlink" href="#http" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx37.png" src="../_images/nginx37.png" />
+</section>
+<section id="http11">
+<h2><span class="section-number">6.8. </span>http模块的11个阶段<a class="headerlink" href="#http11" title="Permalink to this headline"></a></h2>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">typedef</span><span class="w"> </span><span class="k">enum</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">NGX_HTTP_POST_READ_PHASE</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">NGX_HTTP_SERVER_REWRITE_PHASE</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">NGX_HTTP_FIND_CONFIG_PHASE</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">NGX_HTTP_REWRITE_PHASE</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">NGX_HTTP_POST_REWRITE_PHASE</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">NGX_HTTP_PREACCESS_PHASE</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">NGX_HTTP_ACCESS_PHASE</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">NGX_HTTP_POST_ACCESS_PHASE</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">NGX_HTTP_PRECONTENT_PHASE</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">NGX_HTTP_CONTENT_PHASE</span><span class="p">,</span><span class="w"></span>
+
+<span class="w">    </span><span class="n">NGX_HTTP_LOG_PHASE</span><span class="w"></span>
+<span class="p">}</span><span class="w"> </span><span class="n">ngx_http_phases</span><span class="p">;</span><span class="w"></span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h2><span class="section-number">6.9. </span>添加模块到11个阶段的常用方法<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<ol class="arabic simple">
+<li><p>直接覆盖式，通过 clcf-&gt;handler = nginx_http_proxy_handler;</p></li>
+<li><p>通过链表。top-&gt;filter1(还有next指向后续filter2)</p></li>
+</ol>
+</section>
+<section id="if">
+<h2><span class="section-number">6.10. </span>if指令连续出现<a class="headerlink" href="#if" title="Permalink to this headline"></a></h2>
+<p>演示案例</p>
+<p>验证下</p>
+<p>具体原因分析</p>
+<p>if指令是rewrite阶段的执行的，会在if条件为真的时候，替换掉当前请求的配置，if是向上继承的，在rewrite阶段顺序执行时，
+每次if为真都会替换当前请求的配置。</p>
+<p>正确姿势</p>
+<ol class="arabic simple">
+<li><p>熟练掌握rewrite的5个指令。</p></li>
+<li><p>if是可以正确执行，不依赖外部的指令。</p></li>
+<li><p>break会阻断后续rewrite的阶段指令的执行。</p></li>
+</ol>
+</section>
+<section id="coredump">
+<h2><span class="section-number">6.11. </span>coredump 核心转储文件<a class="headerlink" href="#coredump" title="Permalink to this headline"></a></h2>
+<p>worker_rlimit_core限制core文件大小，working_directory 控制coredump放置的目录。</p>
+<p>官方参考： <a class="reference external" href="http://nginx.org/en/docs/ngx_core_module.html#worker_rlimit_core">http://nginx.org/en/docs/ngx_core_module.html#worker_rlimit_core</a></p>
+<p>如何生成coredump文件</p>
+<p>配置nginx配置如下</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>worker_rlimit_core 100M<span class="p">;</span>
+working_directory /tmp/nginx<span class="p">;</span>
+</pre></div>
+</div>
+<p>发送信号
+.. code-block:: bash</p>
+<blockquote>
+<div><p># 确认一个work进程id
+[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> nginx]# ps -ef <a href="#id4"><span class="problematic" id="id5">|</span></a>grep nginx
+root     22358     1  0 20:35 ?        00:00:00 nginx: master process ./sbin/nginx
+root     22622 22358  0 20:37 ?        00:00:00 nginx: worker process
+root     22696 22358  0 20:37 ?        00:00:00 nginx: worker process
+root     22894 20221  0 20:39 pts/0    00:00:00 grep –color=auto nginx</p>
+<p>#确认下段异常错误为11
+[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> nginx]# kill -l
+1) SIGHUP    2) SIGINT       3) SIGQUIT      4) SIGILL       5) SIGTRAP
+6) SIGABRT   7) SIGBUS       8) SIGFPE       9) SIGKILL     10) SIGUSR1
+11) SIGSEGV 12) SIGUSR2     13) SIGPIPE     14) SIGALRM     15) SIGTERM
+16) SIGSTKFLT       17) SIGCHLD     18) SIGCONT     19) SIGSTOP     20) SIGTSTP
+21) SIGTTIN 22) SIGTTOU     23) SIGURG      24) SIGXCPU     25) SIGXFSZ
+26) SIGVTALRM       27) SIGPROF     28) SIGWINCH    29) SIGIO       30) SIGPWR
+31) SIGSYS  34) SIGRTMIN    35) SIGRTMIN+1  36) SIGRTMIN+2  37) SIGRTMIN+3
+38) SIGRTMIN+4      39) SIGRTMIN+5  40) SIGRTMIN+6  41) SIGRTMIN+7  42) SIGRTMIN+8
+43) SIGRTMIN+9      44) SIGRTMIN+10 45) SIGRTMIN+11 46) SIGRTMIN+12 47) SIGRTMIN+13
+48) SIGRTMIN+14     49) SIGRTMIN+15 50) SIGRTMAX-14 51) SIGRTMAX-13 52) SIGRTMAX-12
+53) SIGRTMAX-11     54) SIGRTMAX-10 55) SIGRTMAX-9  56) SIGRTMAX-8  57) SIGRTMAX-7
+58) SIGRTMAX-6      59) SIGRTMAX-5  60) SIGRTMAX-4  61) SIGRTMAX-3  62) SIGRTMAX-2
+63) SIGRTMAX-1      64) SIGRTMAX
+# send signal
+[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> nginx]# kill -11 22622 22696
+[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> nginx]# ll /tmp/nginx/
+total 0
+[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> nginx]# ll /home/coresave/
+total 9016
+-rw——- 1 root root 5124096 Jan 17 20:39 core.nginx.22622.1642423167
+-rw——- 1 root root 5124096 Jan 17 20:39 core.nginx.22696.1642423167</p>
+</div></blockquote>
+<p>这里机器单独配置了core位置了，你是nginx配置的为啥不能覆盖系统的呢。</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># sysctl  -a |grep patt</span>
+kernel.core_pattern <span class="o">=</span> /home/coresave/core.%e.%p.%t
+</pre></div>
+</div>
+</section>
+<section id="gdb">
+<h2><span class="section-number">6.12. </span>gdb的基本使用<a class="headerlink" href="#gdb" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>bt: 显示函数堆栈调用情况</p></li>
+<li><p>f: 显示某1堆栈详细信息</p></li>
+<li><p>p: 打印变量值</p></li>
+<li><p>l: 显示附近代码</p></li>
+<li><p>x: 显示具体内存值</p></li>
+<li><p>i: 显示信息</p></li>
+</ul>
+<p>gdb分析上面产生的core文件</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span><span class="hll"># 开始gdb
+</span><span class="hll">[root@zhaojiedi-elk-2 nginx]# gdb /root/openresty/nginx/sbin/nginx  /home/coresave/core.nginx.22622.1642423167
+</span>GNU gdb (GDB) Red Hat Enterprise Linux 7.6.1-120.el7
+Copyright (C) 2013 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later &lt;http://gnu.org/licenses/gpl.html&gt;
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type &quot;show copying&quot;
+and &quot;show warranty&quot; for details.
+This GDB was configured as &quot;x86_64-redhat-linux-gnu&quot;.
+For bug reporting instructions, please see:
+&lt;http://www.gnu.org/software/gdb/bugs/&gt;...
+Reading symbols from /root/openresty/nginx/sbin/nginx...done.
+[New LWP 22622]
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library &quot;/lib64/libthread_db.so.1&quot;.
+Core was generated by `nginx: worker&#39;.
+Program terminated with signal 11, Segmentation fault.
+#0  0x00007efcbd29dfb3 in __epoll_wait_nocancel () from /lib64/libc.so.6
+Missing separate debuginfos, use: debuginfo-install GeoIP-1.5.0-14.el7.x86_64 bzip2-libs-1.0.6-13.el7.x86_64 cyrus-sasl-lib-2.1.26-23.el7.x86_64 expat-2.1.0-12.el7.x86_64 fontconfig-2.13.0-4.3.el7.x86_64 freetype-2.8-14.el7_9.1.x86_64 gd-2.0.35-27.el7_9.x86_64 glibc-2.17-324.el7_9.x86_64 gperftools-libs-2.6.1-1.el7.x86_64 keyutils-libs-1.5.8-3.el7.x86_64 krb5-libs-1.15.1-50.el7.x86_64 libX11-1.6.7-4.el7_9.x86_64 libXau-1.0.8-2.1.el7.x86_64 libXpm-3.5.12-1.el7.x86_64 libcom_err-1.42.9-19.el7.x86_64 libgcc-4.8.5-44.el7.x86_64 libgcrypt-1.5.3-14.el7.x86_64 libgpg-error-1.12-3.el7.x86_64 libjpeg-turbo-1.2.90-8.el7.x86_64 libpng-1.5.13-8.el7.x86_64 libselinux-2.5-15.el7.x86_64 libstdc++-4.8.5-44.el7.x86_64 libuuid-2.23.2-65.el7_9.1.x86_64 libxcb-1.13-1.el7.x86_64 libxml2-2.9.1-6.el7.5.x86_64 libxslt-1.1.28-6.el7.x86_64 nspr-4.25.0-2.el7_9.x86_64 nss-3.53.1-7.el7_9.x86_64 nss-softokn-freebl-3.53.1-6.el7_9.x86_64 nss-util-3.53.1-1.el7_9.x86_64 openldap-2.4.44-24.el7_9.x86_64 openssl-libs-1.0.2k-21.el7_9.x86_64 pcre-8.32-17.el7.x86_64 perl-libs-5.16.3-299.el7_9.x86_64 postgresql-libs-9.2.24-7.el7_9.x86_64 xz-libs-5.2.2-1.el7.x86_64 zlib-1.2.7-19.el7_9.x86_64   
+# 看看函数堆栈
+<span class="hll">(gdb) bt
+</span>#0  0x00007efcbd29dfb3 in __epoll_wait_nocancel () from /lib64/libc.so.6
+#1  0x0000000000455461 in ngx_epoll_process_events (cycle=0x1b5f060, timer=18446744073709551615, flags=1)
+    at src/event/modules/ngx_epoll_module.c:800
+#2  0x000000000044a2e3 in ngx_process_events_and_timers (cycle=cycle@entry=0x1b5f060) at src/event/ngx_event.c:257
+#3  0x00000000004530e5 in ngx_worker_process_cycle (cycle=cycle@entry=0x1b5f060, data=data@entry=0x1)
+    at src/os/unix/ngx_process_cycle.c:782
+#4  0x0000000000451a6c in ngx_spawn_process (cycle=cycle@entry=0x1b5f060,
+    proc=proc@entry=0x4530a0 &lt;ngx_worker_process_cycle&gt;, data=data@entry=0x1,
+    name=name@entry=0x59d83f &quot;worker process&quot;, respawn=respawn@entry=-4) at src/os/unix/ngx_process.c:199
+#5  0x000000000045347c in ngx_start_worker_processes (cycle=cycle@entry=0x1b5f060, n=2, type=type@entry=-4)
+    at src/os/unix/ngx_process_cycle.c:382
+#6  0x0000000000454354 in ngx_master_process_cycle (cycle=0x1b5f060, cycle@entry=0x1b28c40)
+    at src/os/unix/ngx_process_cycle.c:241
+#7  0x00000000004281d2 in main (argc=&lt;optimized out&gt;, argv=&lt;optimized out&gt;) at src/core/nginx.c:386
+
+    # 查看各个线程的函数堆栈，这里只有1个线程的。
+<span class="hll">(gdb) thread apply all bt
+</span>
+Thread 1 (Thread 0x7efcc0bf28c0 (LWP 22622)):
+#0  0x00007efcbd29dfb3 in __epoll_wait_nocancel () from /lib64/libc.so.6
+#1  0x0000000000455461 in ngx_epoll_process_events (cycle=0x1b5f060, timer=18446744073709551615, flags=1)
+    at src/event/modules/ngx_epoll_module.c:800
+#2  0x000000000044a2e3 in ngx_process_events_and_timers (cycle=cycle@entry=0x1b5f060) at src/event/ngx_event.c:257
+#3  0x00000000004530e5 in ngx_worker_process_cycle (cycle=cycle@entry=0x1b5f060, data=data@entry=0x1)
+    at src/os/unix/ngx_process_cycle.c:782
+#4  0x0000000000451a6c in ngx_spawn_process (cycle=cycle@entry=0x1b5f060,
+    proc=proc@entry=0x4530a0 &lt;ngx_worker_process_cycle&gt;, data=data@entry=0x1,
+    name=name@entry=0x59d83f &quot;worker process&quot;, respawn=respawn@entry=-4) at src/os/unix/ngx_process.c:199
+#5  0x000000000045347c in ngx_start_worker_processes (cycle=cycle@entry=0x1b5f060, n=2, type=type@entry=-4)
+    at src/os/unix/ngx_process_cycle.c:382
+#6  0x0000000000454354 in ngx_master_process_cycle (cycle=0x1b5f060, cycle@entry=0x1b28c40)
+    at src/os/unix/ngx_process_cycle.c:241
+#7  0x00000000004281d2 in main (argc=&lt;optimized out&gt;, argv=&lt;optimized out&gt;) at src/core/nginx.c:386
+
+    # 进入线程1
+<span class="hll">    (gdb) t 1
+</span>    [Switching to thread 1 (Thread 0x7efcc0bf28c0 (LWP 22622))]
+    #0  0x00007efcbd29dfb3 in __epoll_wait_nocancel () from /lib64/libc.so.6
+    # 进入堆栈1
+    (gdb) f 1
+    #1  0x0000000000455461 in ngx_epoll_process_events (cycle=0x1b5f060, timer=18446744073709551615, flags=1)
+        at src/event/modules/ngx_epoll_module.c:800
+    800	    events = epoll_wait(ep, event_list, (int) nevents, timer);
+
+    # 打印这个变量的值看看
+    (gdb) p *cycle
+    $1 = {conf_ctx = 0x1b2a0d0, pool = 0x1b28c00, log = 0x1b5f078, new_log = {log_level = 4, file = 0x1b290a8,
+        connection = 0, disk_full_time = 0, handler = 0x0, data = 0x0, writer = 0x0, wdata = 0x0, action = 0x0,
+        next = 0x0}, log_use_stderr = 0, files = 0x0, free_connections = 0x7efcc0b562c8, free_connection_n = 1021,
+      modules = 0x1c21060, modules_n = 129, modules_used = 1, reusable_connections_queue = {prev = 0x1b5f100,
+        next = 0x1b5f100}, reusable_connections_n = 0, connections_reuse_time = 0, listening = {elts = 0x1b86440,
+        nelts = 1, size = 296, nalloc = 1, pool = 0x1b28c00, old_elts = 0x0}, paths = {elts = 0x1b2a900, nelts = 5,
+        size = 8, nalloc = 5, pool = 0x1b28c00, old_elts = 0x0}, config_dump = {elts = 0x1ba2840, nelts = 3, size = 24,
+        nalloc = 4, pool = 0x1b28c00, old_elts = 0x1ba28d0}, config_dump_rbtree = {root = 0x1baf200,
+        sentinel = 0x1b5f1c8, insert = 0x42fb80 &lt;ngx_str_rbtree_insert_value&gt;}, config_dump_sentinel = {key = 0,
+        left = 0x0, right = 0x0, parent = 0x0, color = 0 &#39;\000&#39;, data = 0 &#39;\000&#39;}, open_files = {last = 0x1b5f1f8,
+        part = {elts = 0x1b29080, nelts = 2, next = 0x0}, size = 40, nalloc = 2, pool = 0x1b28c00}, shared_memory = {
+        last = 0x1b5f230, part = {elts = 0x1b29490, nelts = 0, next = 0x0}, size = 88, nalloc = 1, pool = 0x1b28c00},
+      connection_n = 1024, files_n = 0, connections = 0x7efcc0b56010, read_events = 0x1cddcf0, write_events = 0x1cf5d00,
+      old_cycle = 0x0, conf_file = {len = 37, data = 0x1b28ff0 &quot;/root/openresty/nginx/conf/nginx.conf&quot;}, conf_param = {
+        len = 0, data = 0x1b29060 &quot;0\220\262\001&quot;}, conf_prefix = {len = 27,
+        data = 0x1b28f20 &quot;/root/openresty/nginx/conf/&quot;}, prefix = {len = 22, data = 0x1b28f90 &quot;/root/openresty/nginx/&quot;},
+      error_log = {len = 14, data = 0x1b28fd0 &quot;logs/error.log&quot;}, lock_file = {len = 38,
+        data = 0x1bf8e60 &quot;/root/openresty/nginx/logs/nginx.lock.accept&quot;}, hostname = {len = 33,
+        data = 0x1b64620 &quot;zhaojiedi-elk-2.epc.duxiaoman.com&quot;}, intercept_error_log_handler = 0x0,
+      intercept_error_log_data = 0x0, entered_logger = 0}
+      (gdb) p *cycle-&gt;modules
+      $2 = (ngx_module_t *) 0x807360 &lt;ngx_core_module&gt;
+
+        # 查看具体命令
+        (gdb) p cycle-&gt;modules[10]-&gt;commands[15]
+    $19 = {name = {len = 3, data = 0x5c903e &quot;ngx_openssl_module&quot;}, type = 0, set = 0x0, conf = 1019009, offset = 5868632,
+    post = 0x8092c0 &lt;ngx_openssl_module_ctx&gt;}
+
+        (gdb) p ((ngx_listening_t*)(cycle-&gt;listening-&gt;elts))[1]
+        $24 = {fd = 4097, sockaddr = 0x0, socklen = 0, addr_text_max_len = 2, addr_text = {len = 0,
+            data = 0x1b9dd78 &quot;\&quot;h\233\321\a&quot;}, type = 28981264, backlog = 0, rcvbuf = 0, sndbuf = 0, keepidle = 0,
+        keepintvl = 0, keepcnt = 10, handler = 0x0, servers = 0x1b9deb8, log = {log_level = 28981264, file = 0x0,
+            connection = 0, disk_full_time = 0, handler = 0x0, data = 0x1b9df68, writer = 0x1ba3810, wdata = 0x0,
+            action = 0x0, next = 0x2}, logp = 0x0, pool_size = 28958712, post_accept_buffer_size = 28981264, previous = 0x0,
+        connection = 0x0, rbtree = {root = 0x2, sentinel = 0x0, insert = 0x1b9e128}, sentinel = {key = 28949512,
+            left = 0x0, right = 0x0, parent = 0x2, color = 0 &#39;\000&#39;, data = 0 &#39;\000&#39;}, worker = 28959336, open = 0,
+        remain = 0, ignore = 0, bound = 1, inherited = 1, nonblocking_accept = 1, listen = 0, nonblocking = 0, shared = 0,
+        addr_ntop = 0, wildcard = 1, ipv6only = 1, reuseport = 1, add_reuseport = 1, keepalive = 2, deferred_accept = 1,
+        delete_deferred = 0, add_deferred = 0, fastopen = 0}
+</pre></div>
+</div>
+<p>todo</p>
+</section>
+<section id="debug">
+<h2><span class="section-number">6.13. </span>debug定位问题<a class="headerlink" href="#debug" title="Permalink to this headline"></a></h2>
+<p>我们引入了第三方模块可能存在bug的，打开debug_points后则遇到问题后停止服务，方便定位问题。</p>
+<ul class="simple">
+<li><p>abort: 生成coredump后结束进程</p></li>
+<li><p>stop: 结束进程</p></li>
+</ul>
+<p>todo</p>
+</section>
+<section id="debugerror-log">
+<h2><span class="section-number">6.14. </span>控制debug级别的error.log日志输出<a class="headerlink" href="#debugerror-log" title="Permalink to this headline"></a></h2>
+<p>debug_connection针对特定客户端打印debug级别的日志，其他的日志正常打印。</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>需要nginx编译的时候–with-debug编译选项。</p>
+</div>
+</section>
+<section id="id6">
+<h2><span class="section-number">6.15. </span>debug日志分析<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<dl class="simple">
+<dt>建立连接</dt><dd><p>ssl握手</p>
+</dd>
+<dt>接受请求的头部</dt><dd><p>解析行
+解析头部</p>
+</dd>
+<dt>11阶段处理</dt><dd><p>查找location
+反向代理构造上游的请求
+接收客户端请求包体</p>
+</dd>
+</dl>
+<p>构造响应头
+发送响应</p>
+<blockquote>
+<div><p>过滤模块</p>
+</div></blockquote>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="05-nginx%E4%BC%98%E5%8C%96.html" class="btn btn-neutral float-left" title="5. nginx优化" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, zhaojiedi1992@outlook.com.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

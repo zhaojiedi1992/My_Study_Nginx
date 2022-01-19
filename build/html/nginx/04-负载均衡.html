@@ -18,6 +18,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="5. nginx优化" href="05-nginx%E4%BC%98%E5%8C%96.html" />
     <link rel="prev" title="3. nginx的http模块" href="03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html" /> 
 </head>
 
@@ -82,8 +83,20 @@
 <li class="toctree-l2"><a class="reference internal" href="#id27">4.38. 七层反向代理对照表</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#redis">4.39. redis反向代理</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#nginxwebsocket">4.40. nginx实现websocket代理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id28">4.41. 使用分片提升效率</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id29">4.42. 缓存优化-文件打开</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#http2">4.43. http2主要特性</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id30">4.44. http2核心概念</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id31">4.45. 协议分层和多路复用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id32">4.46. http2推送文件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nginxgrpc">4.47. nginx反向代理grpc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nginx4">4.48. nginx代理4层样例</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#proxy-protocol">4.49. proxy_protocol 协议</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#udp">4.50. udp反向代理</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="05-nginx%E4%BC%98%E5%8C%96.html">5. nginx优化</a></li>
+<li class="toctree-l1"><a class="reference internal" href="06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html">6. openresty及nginx源码</a></li>
 </ul>
 
         </div>
@@ -980,6 +993,142 @@ proxy_set_header Connection “upgrade”;</p>
 <img alt="../_images/nginx32.png" src="../_images/nginx32.png" />
 <p>如果配置证书的话， 就是wss协议了。 这个样例仅仅支持ws协议。</p>
 </section>
+<section id="id28">
+<h2><span class="section-number">4.41. </span>使用分片提升效率<a class="headerlink" href="#id28" title="Permalink to this headline"></a></h2>
+<p>处理大文件的时候，每次都请求全部大小是很消耗资源的事情， 通过range方式配合slice方式即可请求特定部分。</p>
+<p>准备一个大文件</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">of</span><span class="o">=</span>big.avi <span class="nv">bs</span><span class="o">=</span>1M <span class="nv">count</span><span class="o">=</span><span class="m">88</span>
+</pre></div>
+</div>
+<p>配置一个上游服务</p>
+<p>就是简单配置的静态集群的。</p>
+<p>配置openrestry</p>
+<p>验证下</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-slice.linuxpanda.tech:8084/big.avi -r 100-200</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># tail -n 2 /root/openresty/nginx/logs/access.log</span>
+<span class="m">10</span>.157.89.215 - - <span class="o">[</span><span class="m">12</span>/Jan/2022:10:47:08 +0800<span class="o">]</span> <span class="s2">&quot;GET /big.avi HTTP/1.1&quot;</span> <span class="m">502</span> <span class="m">173</span> <span class="s2">&quot;-&quot;</span> <span class="s2">&quot;curl/7.29.0&quot;</span> <span class="s2">&quot;-&quot;</span><span class="nv">request_filename</span><span class="o">=</span>/root/openresty/nginx/html/big.avi <span class="nv">document_root</span><span class="o">=</span>/root/openresty/nginx/html <span class="nv">realpath_root</span><span class="o">=</span>/root/openresty/nginx/html
+<span class="m">10</span>.157.89.215 - - <span class="o">[</span><span class="m">12</span>/Jan/2022:10:47:55 +0800<span class="o">]</span> <span class="s2">&quot;GET /big.avi HTTP/1.1&quot;</span> <span class="m">206</span> <span class="m">101</span> <span class="s2">&quot;-&quot;</span> <span class="s2">&quot;curl/7.29.0&quot;</span> <span class="s2">&quot;-&quot;</span><span class="nv">request_filename</span><span class="o">=</span>/root/openresty/nginx/html/big.avi <span class="nv">document_root</span><span class="o">=</span>/root/openresty/nginx/html <span class="nv">realpath_root</span><span class="o">=</span>/root/openresty/nginx/html
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># tail -n 2 /root/nginx/logs/access.log</span>
+<span class="m">127</span>.0.0.1 - - <span class="o">[</span><span class="m">11</span>/Jan/2022:15:47:39 +0800<span class="o">]</span> <span class="s2">&quot;GET /index.html HTTP/1.0&quot;</span> <span class="m">200</span> <span class="m">612</span> <span class="s2">&quot;-&quot;</span> <span class="s2">&quot;curl/7.29.0&quot;</span>
+<span class="m">127</span>.0.0.1 - - <span class="o">[</span><span class="m">12</span>/Jan/2022:10:47:55 +0800<span class="o">]</span> <span class="s2">&quot;GET /big.avi HTTP/1.0&quot;</span> <span class="m">200</span> <span class="m">92274688</span> <span class="s2">&quot;-&quot;</span> <span class="s2">&quot;curl/7.29.0&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="id29">
+<h2><span class="section-number">4.42. </span>缓存优化-文件打开<a class="headerlink" href="#id29" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>open_file_cache: 打开文件缓存的个数，超过的个数使用lru算法。</p></li>
+<li><p>open_file_cache_valid: 文件缓存的有效时间。</p></li>
+<li><p>open_file_cache_errors: 是否缓存文件查询的错误信息。默认off.</p></li>
+<li><p>open_file_cache_min_uses: 具体没有看明白文档。</p></li>
+</ul>
+<p>文件缓存都缓存什么内容</p>
+<ul class="simple">
+<li><p>文件句柄</p></li>
+<li><p>文件修改时间</p></li>
+<li><p>文件大小</p></li>
+<li><p>文件查询时候的错误信息(比如文件不能存在，或者没有权限)</p></li>
+<li><p>目录是否存在</p></li>
+</ul>
+<p>配置如下</p>
+<p>验证</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 这里找到对应nginx的work进程，看看这个具体进程的系统调用</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 ~<span class="o">]</span><span class="c1"># strace -p 14160</span>
+strace: Process <span class="m">14160</span> attached
+<span class="c1"># 默认卡在wait这个地方，等待连接请求</span>
+epoll_wait<span class="o">(</span><span class="m">13</span>,<span class="o">[{</span>EPOLLIN, <span class="o">{</span><span class="nv">u32</span><span class="o">=</span><span class="m">44802384</span>, <span class="nv">u64</span><span class="o">=</span><span class="m">44802384</span><span class="o">}}]</span>, <span class="m">512</span>, -1<span class="o">)</span> <span class="o">=</span> <span class="m">1</span>
+<span class="c1"># 收到一个请求</span>
+accept4<span class="o">(</span><span class="m">11</span>, <span class="o">{</span><span class="nv">sa_family</span><span class="o">=</span>AF_INET, <span class="nv">sin_port</span><span class="o">=</span>htons<span class="o">(</span><span class="m">40254</span><span class="o">)</span>, <span class="nv">sin_addr</span><span class="o">=</span>inet_addr<span class="o">(</span><span class="s2">&quot;10.157.89.215&quot;</span><span class="o">)}</span>, <span class="o">[</span><span class="m">112</span>-&gt;16<span class="o">]</span>, SOCK_CLOEXEC<span class="p">|</span>SOCK_NONBLOCK<span class="o">)</span> <span class="o">=</span> <span class="m">4</span>
+epoll_ctl<span class="o">(</span><span class="m">13</span>, EPOLL_CTL_ADD, <span class="m">4</span>, <span class="o">{</span>EPOLLIN<span class="p">|</span>EPOLLRDHUP<span class="p">|</span>EPOLLET, <span class="o">{</span><span class="nv">u32</span><span class="o">=</span><span class="m">44803080</span>, <span class="nv">u64</span><span class="o">=</span><span class="m">44803080</span><span class="o">}})</span> <span class="o">=</span> <span class="m">0</span>
+epoll_wait<span class="o">(</span><span class="m">13</span>, <span class="o">[{</span>EPOLLIN, <span class="o">{</span><span class="nv">u32</span><span class="o">=</span><span class="m">44803080</span>, <span class="nv">u64</span><span class="o">=</span><span class="m">44803080</span><span class="o">}}]</span>, <span class="m">512</span>, <span class="m">60000</span><span class="o">)</span> <span class="o">=</span> <span class="m">1</span>
+<span class="c1"># 接受头部</span>
+recvfrom<span class="o">(</span><span class="m">4</span>, <span class="s2">&quot;GET / HTTP/1.1\r\nUser-Agent: curl&quot;</span>..., <span class="m">1024</span>, <span class="m">0</span>, NULL, NULL<span class="o">)</span> <span class="o">=</span> <span class="m">100</span>
+<span class="c1"># 写响应</span>
+writev<span class="o">(</span><span class="m">4</span>, <span class="o">[{</span><span class="nv">iov_base</span><span class="o">=</span><span class="s2">&quot;HTTP/1.1 200 OK\r\nServer: openres&quot;</span>..., <span class="nv">iov_len</span><span class="o">=</span><span class="m">255</span><span class="o">}]</span>, <span class="m">1</span><span class="o">)</span> <span class="o">=</span> <span class="m">255</span>
+<span class="c1"># 发送文件body</span>
+sendfile<span class="o">(</span><span class="m">4</span>, <span class="m">5</span>, <span class="o">[</span><span class="m">0</span><span class="o">]</span> <span class="o">=</span>&gt; <span class="o">[</span><span class="m">1129</span><span class="o">]</span>, <span class="m">1129</span><span class="o">)</span>     <span class="o">=</span> <span class="m">1129</span>
+lstat<span class="o">(</span><span class="s2">&quot;/root&quot;</span>, <span class="o">{</span><span class="nv">st_mode</span><span class="o">=</span>S_IFDIR<span class="p">|</span><span class="m">0550</span>, <span class="nv">st_size</span><span class="o">=</span><span class="m">4096</span>, ...<span class="o">})</span> <span class="o">=</span> <span class="m">0</span>
+lstat<span class="o">(</span><span class="s2">&quot;/root/openresty&quot;</span>, <span class="o">{</span><span class="nv">st_mode</span><span class="o">=</span>S_IFDIR<span class="p">|</span><span class="m">0755</span>, <span class="nv">st_size</span><span class="o">=</span><span class="m">4096</span>, ...<span class="o">})</span> <span class="o">=</span> <span class="m">0</span>
+lstat<span class="o">(</span><span class="s2">&quot;/root/openresty/nginx&quot;</span>, <span class="o">{</span><span class="nv">st_mode</span><span class="o">=</span>S_IFDIR<span class="p">|</span><span class="m">0755</span>, <span class="nv">st_size</span><span class="o">=</span><span class="m">4096</span>, ...<span class="o">})</span> <span class="o">=</span> <span class="m">0</span>
+lstat<span class="o">(</span><span class="s2">&quot;/root/openresty/nginx/html&quot;</span>, <span class="o">{</span><span class="nv">st_mode</span><span class="o">=</span>S_IFDIR<span class="p">|</span><span class="m">0755</span>, <span class="nv">st_size</span><span class="o">=</span><span class="m">4096</span>, ...<span class="o">})</span> <span class="o">=</span> <span class="m">0</span>
+write<span class="o">(</span><span class="m">3</span>, <span class="s2">&quot;10.157.89.215 - - [12/Jan/2022:1&quot;</span>..., <span class="m">232</span><span class="o">)</span> <span class="o">=</span> <span class="m">232</span>
+setsockopt<span class="o">(</span><span class="m">4</span>, SOL_TCP, TCP_NODELAY, <span class="o">[</span><span class="m">1</span><span class="o">]</span>, <span class="m">4</span><span class="o">)</span> <span class="o">=</span> <span class="m">0</span>
+epoll_wait<span class="o">(</span><span class="m">13</span>, <span class="o">[{</span>EPOLLIN<span class="p">|</span>EPOLLRDHUP, <span class="o">{</span><span class="nv">u32</span><span class="o">=</span><span class="m">44803080</span>, <span class="nv">u64</span><span class="o">=</span><span class="m">44803080</span><span class="o">}}]</span>, <span class="m">512</span>, <span class="m">65000</span><span class="o">)</span> <span class="o">=</span> <span class="m">1</span>
+recvfrom<span class="o">(</span><span class="m">4</span>, <span class="s2">&quot;&quot;</span>, <span class="m">1024</span>, <span class="m">0</span>, NULL, NULL<span class="o">)</span>    <span class="o">=</span> <span class="m">0</span>
+close<span class="o">(</span><span class="m">4</span><span class="o">)</span>                                <span class="o">=</span> <span class="m">0</span>
+epoll_wait<span class="o">(</span><span class="m">13</span>,
+</pre></div>
+</div>
+</section>
+<section id="http2">
+<h2><span class="section-number">4.43. </span>http2主要特性<a class="headerlink" href="#http2" title="Permalink to this headline"></a></h2>
+<dl class="simple">
+<dt>传输数据量大幅减少</dt><dd><p>二进制数据传输
+标头压缩</p>
+</dd>
+<dt>多路复用</dt><dd><p>消息优先级</p>
+</dd>
+<dt>服务器消息推送</dt><dd><p>并行推送</p>
+</dd>
+</dl>
+</section>
+<section id="id30">
+<h2><span class="section-number">4.44. </span>http2核心概念<a class="headerlink" href="#id30" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>连接： 1个tcp连接</p></li>
+<li><p>流：一个双向流</p></li>
+<li><p>消息： 对应http的请求或者响应</p></li>
+<li><p>数据帧： 最小单位，以二进制压缩格存放http1中的内容。</p></li>
+</ul>
+</section>
+<section id="id31">
+<h2><span class="section-number">4.45. </span>协议分层和多路复用<a class="headerlink" href="#id31" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx33.png" src="../_images/nginx33.png" />
+<p>传输是无序的，接收的时候组装。</p>
+<p>优先级1-255</p>
+</section>
+<section id="id32">
+<h2><span class="section-number">4.46. </span>http2推送文件<a class="headerlink" href="#id32" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>http2_push_preload 跟进header指定， 上游服务器可以生成header.</p></li>
+<li><p>http2_push 推送哪个url</p></li>
+<li><p>http2_push_max_number: 推送最大数</p></li>
+<li><p>http2_recv_timeout: 如果超过这个时间没有收到请求就关闭</p></li>
+<li><p>http2_idle_timeout: 超过这个时间，就关闭连接</p></li>
+<li><p>http2_max_concurrent_pusher: 最大推送个数</p></li>
+<li><p>http2_max-concurrent_streams: 最大并发流个数</p></li>
+<li><p>http2_max_field_size： header最大大小</p></li>
+<li><p>http2_max_requests: 一个连接最大请求个数</p></li>
+</ul>
+</section>
+<section id="nginxgrpc">
+<h2><span class="section-number">4.47. </span>nginx反向代理grpc<a class="headerlink" href="#nginxgrpc" title="Permalink to this headline"></a></h2>
+<p>stream模块处理的7个阶段</p>
+<ul class="simple">
+<li><p>POST_ACCEPT</p></li>
+<li><p>PREACCESS</p></li>
+<li><p>ACCESSS</p></li>
+<li><p>SSL</p></li>
+<li><p>PREFEAD</p></li>
+<li><p>CONTENT</p></li>
+<li><p>LOG</p></li>
+</ul>
+</section>
+<section id="nginx4">
+<h2><span class="section-number">4.48. </span>nginx代理4层样例<a class="headerlink" href="#nginx4" title="Permalink to this headline"></a></h2>
+</section>
+<section id="proxy-protocol">
+<h2><span class="section-number">4.49. </span>proxy_protocol 协议<a class="headerlink" href="#proxy-protocol" title="Permalink to this headline"></a></h2>
+<dl class="simple">
+<dt>v1协议：</dt><dd><p>proxy tcp4 ip1 ip2 port1 port2 rn</p>
+</dd>
+<dt>v2协议：</dt><dd><p>签名+ version_command + 地址族+ 长度</p>
+</dd>
+</dl>
+</section>
+<section id="udp">
+<h2><span class="section-number">4.50. </span>udp反向代理<a class="headerlink" href="#udp" title="Permalink to this headline"></a></h2>
+</section>
 </section>
 
 
@@ -987,6 +1136,7 @@ proxy_set_header Connection “upgrade”;</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html" class="btn btn-neutral float-left" title="3. nginx的http模块" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="05-nginx%E4%BC%98%E5%8C%96.html" class="btn btn-neutral float-right" title="5. nginx优化" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

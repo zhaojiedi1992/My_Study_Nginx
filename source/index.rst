@@ -14,3 +14,5 @@ my_study_nginx's 学习笔记
     nginx/02-nginx架构基础
     nginx/03-nginx的http模块
     nginx/04-负载均衡
+    nginx/05-nginx优化
+    nginx/06-OpenRestyNginx和nginx源码

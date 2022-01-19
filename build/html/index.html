@@ -42,6 +42,8 @@
 <li class="toctree-l1"><a class="reference internal" href="nginx/02-nginx%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80.html">2. nginx架构基础</a></li>
 <li class="toctree-l1"><a class="reference internal" href="nginx/03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html">3. nginx的http模块</a></li>
 <li class="toctree-l1"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html">4. 负载均衡</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html">5. nginx优化</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html">6. openresty及nginx源码</a></li>
 </ul>
 
         </div>
@@ -220,6 +222,35 @@
 <li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id27">4.38. 七层反向代理对照表</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#redis">4.39. redis反向代理</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#nginxwebsocket">4.40. nginx实现websocket代理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id28">4.41. 使用分片提升效率</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id29">4.42. 缓存优化-文件打开</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#http2">4.43. http2主要特性</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id30">4.44. http2核心概念</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id31">4.45. 协议分层和多路复用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#id32">4.46. http2推送文件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#nginxgrpc">4.47. nginx反向代理grpc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#nginx4">4.48. nginx代理4层样例</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#proxy-protocol">4.49. proxy_protocol 协议</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#udp">4.50. udp反向代理</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html">5. nginx优化</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html">6. openresty及nginx源码</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id1">6.1. 第三方模块源码的快速阅读方法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#config">6.2. config结构</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#nginx">6.3. nginx启动和退户回调方法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id2">6.4. nginx启动过程</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#master">6.5. master进程循环</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#work">6.6. work进程循环</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#http">6.7. http模块初始化</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#http11">6.8. http模块的11个阶段</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id3">6.9. 添加模块到11个阶段的常用方法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#if">6.10. if指令连续出现</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#coredump">6.11. coredump 核心转储文件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#gdb">6.12. gdb的基本使用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#debug">6.13. debug定位问题</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#debugerror-log">6.14. 控制debug级别的error.log日志输出</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id6">6.15. debug日志分析</a></li>
 </ul>
 </li>
 </ul>
