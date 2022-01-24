@@ -58,7 +58,28 @@
 <li class="toctree-l2"><a class="reference internal" href="#gdb">6.12. gdb的基本使用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#debug">6.13. debug定位问题</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#debugerror-log">6.14. 控制debug级别的error.log日志输出</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id6">6.15. debug日志分析</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">6.15. debug日志分析</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#openresty">6.16. openresty简介</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#openrestysdk">6.17. openrestysdk分类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">6.18. openresty的使用要点</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#openrestrynginx">6.19. openrestry的nginx核心模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id6">6.20. openrestry的nginx工具模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#openrestrylua">6.21. openrestry的官方lua模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nginxlua">6.22. 如何在nginx中嵌入lua</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id7">6.23. 在nginx过程嵌入lua代码</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#lua-ffi">6.24. lua ffi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id8">6.25. 系统级配置指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id9">6.26. nginx的变量</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ngx-req">6.27. ngx.req</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sdk">6.28. 发送响应sdk</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id10">6.29. 日志</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#cosocket">6.30. cosocket</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id11">6.31. 多协程方法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#la-resty-lock">6.32. la_resty_lock锁</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id12">6.33. 定时器</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id13">6.34. 共享内存</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id14">6.35. nginx主请求和子请求</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#openrestrywaf">6.36. 基于openrestry的waf防火墙</a></li>
 </ul>
 </li>
 </ul>
@@ -207,7 +228,6 @@
 <section id="if">
 <h2><span class="section-number">6.10. </span>if指令连续出现<a class="headerlink" href="#if" title="Permalink to this headline"></a></h2>
 <p>演示案例</p>
-<p>验证下</p>
 <p>具体原因分析</p>
 <p>if指令是rewrite阶段的执行的，会在if条件为真的时候，替换掉当前请求的配置，if是向上继承的，在rewrite阶段顺序执行时，
 每次if为真都会替换当前请求的配置。</p>
@@ -228,39 +248,39 @@
 working_directory /tmp/nginx<span class="p">;</span>
 </pre></div>
 </div>
-<p>发送信号
-.. code-block:: bash</p>
-<blockquote>
-<div><p># 确认一个work进程id
-[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> nginx]# ps -ef <a href="#id4"><span class="problematic" id="id5">|</span></a>grep nginx
-root     22358     1  0 20:35 ?        00:00:00 nginx: master process ./sbin/nginx
-root     22622 22358  0 20:37 ?        00:00:00 nginx: worker process
-root     22696 22358  0 20:37 ?        00:00:00 nginx: worker process
-root     22894 20221  0 20:39 pts/0    00:00:00 grep –color=auto nginx</p>
-<p>#确认下段异常错误为11
-[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> nginx]# kill -l
-1) SIGHUP    2) SIGINT       3) SIGQUIT      4) SIGILL       5) SIGTRAP
-6) SIGABRT   7) SIGBUS       8) SIGFPE       9) SIGKILL     10) SIGUSR1
-11) SIGSEGV 12) SIGUSR2     13) SIGPIPE     14) SIGALRM     15) SIGTERM
-16) SIGSTKFLT       17) SIGCHLD     18) SIGCONT     19) SIGSTOP     20) SIGTSTP
-21) SIGTTIN 22) SIGTTOU     23) SIGURG      24) SIGXCPU     25) SIGXFSZ
-26) SIGVTALRM       27) SIGPROF     28) SIGWINCH    29) SIGIO       30) SIGPWR
-31) SIGSYS  34) SIGRTMIN    35) SIGRTMIN+1  36) SIGRTMIN+2  37) SIGRTMIN+3
-38) SIGRTMIN+4      39) SIGRTMIN+5  40) SIGRTMIN+6  41) SIGRTMIN+7  42) SIGRTMIN+8
-43) SIGRTMIN+9      44) SIGRTMIN+10 45) SIGRTMIN+11 46) SIGRTMIN+12 47) SIGRTMIN+13
-48) SIGRTMIN+14     49) SIGRTMIN+15 50) SIGRTMAX-14 51) SIGRTMAX-13 52) SIGRTMAX-12
-53) SIGRTMAX-11     54) SIGRTMAX-10 55) SIGRTMAX-9  56) SIGRTMAX-8  57) SIGRTMAX-7
-58) SIGRTMAX-6      59) SIGRTMAX-5  60) SIGRTMAX-4  61) SIGRTMAX-3  62) SIGRTMAX-2
-63) SIGRTMAX-1      64) SIGRTMAX
-# send signal
-[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> nginx]# kill -11 22622 22696
-[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> nginx]# ll /tmp/nginx/
-total 0
-[<a class="reference external" href="mailto:root&#37;&#52;&#48;zhaojiedi-elk-2">root<span>&#64;</span>zhaojiedi-elk-2</a> nginx]# ll /home/coresave/
-total 9016
--rw——- 1 root root 5124096 Jan 17 20:39 core.nginx.22622.1642423167
--rw——- 1 root root 5124096 Jan 17 20:39 core.nginx.22696.1642423167</p>
-</div></blockquote>
+<p>发送信号</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 确认一个work进程id</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># ps -ef |grep nginx</span>
+root     <span class="m">22358</span>     <span class="m">1</span>  <span class="m">0</span> <span class="m">20</span>:35 ?        <span class="m">00</span>:00:00 nginx: master process ./sbin/nginx
+root     <span class="m">22622</span> <span class="m">22358</span>  <span class="m">0</span> <span class="m">20</span>:37 ?        <span class="m">00</span>:00:00 nginx: worker process
+root     <span class="m">22696</span> <span class="m">22358</span>  <span class="m">0</span> <span class="m">20</span>:37 ?        <span class="m">00</span>:00:00 nginx: worker process
+root     <span class="m">22894</span> <span class="m">20221</span>  <span class="m">0</span> <span class="m">20</span>:39 pts/0    <span class="m">00</span>:00:00 grep --color<span class="o">=</span>auto nginx
+
+<span class="c1">#确认下段异常错误为11</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># kill -l</span>
+<span class="m">1</span><span class="o">)</span> SIGHUP    <span class="m">2</span><span class="o">)</span> SIGINT       <span class="m">3</span><span class="o">)</span> SIGQUIT      <span class="m">4</span><span class="o">)</span> SIGILL       <span class="m">5</span><span class="o">)</span> SIGTRAP
+<span class="m">6</span><span class="o">)</span> SIGABRT   <span class="m">7</span><span class="o">)</span> SIGBUS       <span class="m">8</span><span class="o">)</span> SIGFPE       <span class="m">9</span><span class="o">)</span> SIGKILL     <span class="m">10</span><span class="o">)</span> SIGUSR1
+<span class="m">11</span><span class="o">)</span> SIGSEGV <span class="m">12</span><span class="o">)</span> SIGUSR2     <span class="m">13</span><span class="o">)</span> SIGPIPE     <span class="m">14</span><span class="o">)</span> SIGALRM     <span class="m">15</span><span class="o">)</span> SIGTERM
+<span class="m">16</span><span class="o">)</span> SIGSTKFLT       <span class="m">17</span><span class="o">)</span> SIGCHLD     <span class="m">18</span><span class="o">)</span> SIGCONT     <span class="m">19</span><span class="o">)</span> SIGSTOP     <span class="m">20</span><span class="o">)</span> SIGTSTP
+<span class="m">21</span><span class="o">)</span> SIGTTIN <span class="m">22</span><span class="o">)</span> SIGTTOU     <span class="m">23</span><span class="o">)</span> SIGURG      <span class="m">24</span><span class="o">)</span> SIGXCPU     <span class="m">25</span><span class="o">)</span> SIGXFSZ
+<span class="m">26</span><span class="o">)</span> SIGVTALRM       <span class="m">27</span><span class="o">)</span> SIGPROF     <span class="m">28</span><span class="o">)</span> SIGWINCH    <span class="m">29</span><span class="o">)</span> SIGIO       <span class="m">30</span><span class="o">)</span> SIGPWR
+<span class="m">31</span><span class="o">)</span> SIGSYS  <span class="m">34</span><span class="o">)</span> SIGRTMIN    <span class="m">35</span><span class="o">)</span> SIGRTMIN+1  <span class="m">36</span><span class="o">)</span> SIGRTMIN+2  <span class="m">37</span><span class="o">)</span> SIGRTMIN+3
+<span class="m">38</span><span class="o">)</span> SIGRTMIN+4      <span class="m">39</span><span class="o">)</span> SIGRTMIN+5  <span class="m">40</span><span class="o">)</span> SIGRTMIN+6  <span class="m">41</span><span class="o">)</span> SIGRTMIN+7  <span class="m">42</span><span class="o">)</span> SIGRTMIN+8
+<span class="m">43</span><span class="o">)</span> SIGRTMIN+9      <span class="m">44</span><span class="o">)</span> SIGRTMIN+10 <span class="m">45</span><span class="o">)</span> SIGRTMIN+11 <span class="m">46</span><span class="o">)</span> SIGRTMIN+12 <span class="m">47</span><span class="o">)</span> SIGRTMIN+13
+<span class="m">48</span><span class="o">)</span> SIGRTMIN+14     <span class="m">49</span><span class="o">)</span> SIGRTMIN+15 <span class="m">50</span><span class="o">)</span> SIGRTMAX-14 <span class="m">51</span><span class="o">)</span> SIGRTMAX-13 <span class="m">52</span><span class="o">)</span> SIGRTMAX-12
+<span class="m">53</span><span class="o">)</span> SIGRTMAX-11     <span class="m">54</span><span class="o">)</span> SIGRTMAX-10 <span class="m">55</span><span class="o">)</span> SIGRTMAX-9  <span class="m">56</span><span class="o">)</span> SIGRTMAX-8  <span class="m">57</span><span class="o">)</span> SIGRTMAX-7
+<span class="m">58</span><span class="o">)</span> SIGRTMAX-6      <span class="m">59</span><span class="o">)</span> SIGRTMAX-5  <span class="m">60</span><span class="o">)</span> SIGRTMAX-4  <span class="m">61</span><span class="o">)</span> SIGRTMAX-3  <span class="m">62</span><span class="o">)</span> SIGRTMAX-2
+<span class="m">63</span><span class="o">)</span> SIGRTMAX-1      <span class="m">64</span><span class="o">)</span> SIGRTMAX
+<span class="c1"># send signal</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># kill -11 22622 22696</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># ll /tmp/nginx/</span>
+total <span class="m">0</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># ll /home/coresave/</span>
+total <span class="m">9016</span>
+-rw------- <span class="m">1</span> root root <span class="m">5124096</span> Jan <span class="m">17</span> <span class="m">20</span>:39 core.nginx.22622.1642423167
+-rw------- <span class="m">1</span> root root <span class="m">5124096</span> Jan <span class="m">17</span> <span class="m">20</span>:39 core.nginx.22696.1642423167
+</pre></div>
+</div>
 <p>这里机器单独配置了core位置了，你是nginx配置的为啥不能覆盖系统的呢。</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># sysctl  -a |grep patt</span>
 kernel.core_pattern <span class="o">=</span> /home/coresave/core.%e.%p.%t
@@ -386,7 +406,6 @@ Thread 1 (Thread 0x7efcc0bf28c0 (LWP 22622)):
         delete_deferred = 0, add_deferred = 0, fastopen = 0}
 </pre></div>
 </div>
-<p>todo</p>
 </section>
 <section id="debug">
 <h2><span class="section-number">6.13. </span>debug定位问题<a class="headerlink" href="#debug" title="Permalink to this headline"></a></h2>
@@ -395,7 +414,6 @@ Thread 1 (Thread 0x7efcc0bf28c0 (LWP 22622)):
 <li><p>abort: 生成coredump后结束进程</p></li>
 <li><p>stop: 结束进程</p></li>
 </ul>
-<p>todo</p>
 </section>
 <section id="debugerror-log">
 <h2><span class="section-number">6.14. </span>控制debug级别的error.log日志输出<a class="headerlink" href="#debugerror-log" title="Permalink to this headline"></a></h2>
@@ -405,24 +423,543 @@ Thread 1 (Thread 0x7efcc0bf28c0 (LWP 22622)):
 <p>需要nginx编译的时候–with-debug编译选项。</p>
 </div>
 </section>
+<section id="id4">
+<h2><span class="section-number">6.15. </span>debug日志分析<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>建立连接
+    ssl握手
+接受请求的头部
+    解析行
+    解析头部
+11阶段处理
+    查找location
+    反向代理构造上游的请求
+    接收客户端请求包体
+构造响应头
+发送响应
+    过滤模块
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span># 可以看到请求过来了。
+2022/01/19 15:03:55 [debug] 46632#46632: *20 accept: 10.157.89.215:40240 fd:3
+2022/01/19 15:03:55 [debug] 46632#46632: malloc: 0000000001BD4F20:64
+2022/01/19 15:03:55 [debug] 46632#46632: malloc: 0000000001BFBC10:16
+2022/01/19 15:03:55 [debug] 46632#46632: malloc: 0000000001C0AE30:24
+2022/01/19 15:03:55 [debug] 46632#46632: malloc: 0000000001BFA720:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 event timer add: 3: 60000:10094575278
+2022/01/19 15:03:55 [debug] 46632#46632: *20 reusable connection: 1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 epoll add event: fd:3 op:1 ev:80002001
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http wait request handler
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BAF200:80
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BFA580:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C86610:1024
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BAE800:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 recv: eof:0, avail:-1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 recv: fd:3 91 of 1024
+2022/01/19 15:03:55 [debug] 46632#46632: *20 reusable connection: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B39230:48
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C26990:1544
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B9F340:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C84C10:960
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BB0FA0:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001CD9AD0:192
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BAFC20:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C61CB0:680
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BAF720:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B390E0:272
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B9A380:16
+# 开始处理请求行
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http process request line
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http request line: &quot;GET / HTTP/1.1&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http uri: &quot;/&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http args: &quot;&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http exten: &quot;&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B5AB30:960
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B4AAF0:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http process request header line
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BCE0E0:10
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B91880:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http header: &quot;User-Agent: curl/7.29.0&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B56AC0:4
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B2F3F0:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http header: &quot;Host: n-ssl2.linuxpanda.tech:8012&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B5E6D0:6
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BB3620:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http header: &quot;Accept: */*&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http header done
+2022/01/19 15:03:55 [debug] 46632#46632: *20 event timer del: 3: 10094575278
+# http的阶段开始
+2022/01/19 15:03:55 [debug] 46632#46632: *20 generic phase: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 rewrite phase: 1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 rewrite phase: 2
+# 选择location 看到使用了/
+2022/01/19 15:03:55 [debug] 46632#46632: *20 test location: &quot;/&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 using configuration &quot;/&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http cl:-1 max:1048576
+2022/01/19 15:03:55 [debug] 46632#46632: *20 rewrite phase: 4
+2022/01/19 15:03:55 [debug] 46632#46632: *20 rewrite phase: 5
+2022/01/19 15:03:55 [debug] 46632#46632: *20 post rewrite phase: 6
+2022/01/19 15:03:55 [debug] 46632#46632: *20 generic phase: 7
+2022/01/19 15:03:55 [debug] 46632#46632: *20 generic phase: 8
+2022/01/19 15:03:55 [debug] 46632#46632: *20 generic phase: 9
+2022/01/19 15:03:55 [debug] 46632#46632: *20 generic phase: 10
+2022/01/19 15:03:55 [debug] 46632#46632: *20 access phase: 11
+2022/01/19 15:03:55 [debug] 46632#46632: *20 access phase: 12
+2022/01/19 15:03:55 [debug] 46632#46632: *20 access phase: 13
+2022/01/19 15:03:55 [debug] 46632#46632: *20 post access phase: 14
+2022/01/19 15:03:55 [debug] 46632#46632: *20 generic phase: 15
+2022/01/19 15:03:55 [debug] 46632#46632: *20 generic phase: 16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C82730:1184
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BB4070:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C7F370:176
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C04B80:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B950C0:304
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BEE440:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B29140:72
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C04A80:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http init upstream, client timer: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 epoll add event: fd:3 op:3 ev:80002005
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B72E80:80
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B8C0D0:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BFA660:105
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C05F60:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C04880:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C04980:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http script copy: &quot;Host&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http script var: &quot;n-ssl2.linuxpanda.tech&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http script copy: &quot;Connection&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http script copy: &quot;close&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http script copy: &quot;&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http script copy: &quot;&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http proxy header: &quot;User-Agent: curl/7.29.0&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http proxy header: &quot;Accept: */*&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http proxy header:
+# 可以看到发送给上游的请求详细信息。
+&quot;GET / HTTP/1.0
+Host: n-ssl2.linuxpanda.tech
+Connection: close
+User-Agent: curl/7.29.0
+Accept: */*
+
+&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C02E10:48
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C047A0:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C7AB30:72
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C07050:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BB9E40:24
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B8BE70:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http cleanup add: 0000000001BB9E40
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BE9BA0:40
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B620F0:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 get rr peer, try: 1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 stream socket 5
+2022/01/19 15:03:55 [debug] 46632#46632: *20 epoll add connection: fd:5 ev:80002005
+2022/01/19 15:03:55 [debug] 46632#46632: *20 connect to 127.0.0.1:8011, fd:5 #21
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream connect: -2
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C03270:48
+2022/01/19 15:03:55 [debug] 46632#46632: *20 event timer add: 5: 60000:10094575278
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http finalize request: -4, &quot;/?&quot; a:1, c:2
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http request count:2 blk:0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http run request: &quot;/?&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream check client, write event:1, &quot;/&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream request: &quot;/?&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream send request handler
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BFEA40:96
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BB0EF0:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 set session: 0000000000000000
+2022/01/19 15:03:55 [debug] 46632#46632: *20 tcp_nodelay
+
+# ssl
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_do_handshake: -1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_get_error: 2
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL handshake handler: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 verify:1, error:0, depth:1, subject:&quot;/C=cn/ST=henan/L=zhengzhou/O=linuxpanda/OU=opt/CN=n-ca.linuxpanda.tech&quot;, issuer:&quot;/C=cn/ST=henan/L=zhengzhou/O=linuxpanda/OU=opt/CN=n-ca.linuxpanda.tech&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 verify:1, error:0, depth:0, subject:&quot;/C=cn/ST=henan/O=linuxpanda/OU=opt/CN=n-ssl1.linuxpanda.tech&quot;, issuer:&quot;/C=cn/ST=henan/L=zhengzhou/O=linuxpanda/OU=opt/CN=n-ca.linuxpanda.tech&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_do_handshake: -1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_get_error: 2
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL handshake handler: 1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_do_handshake: -1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_get_error: 2
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL handshake handler: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 save session: 0000000001C36CF0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_do_handshake: 1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL: TLSv1.2, cipher: &quot;ECDHE-RSA-AES256-GCM-SHA384 TLSv1.2 Kx=ECDH Au=RSA Enc=AESGCM(256) Mac=AEAD&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream ssl handshake: &quot;/?&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 X509_check_host(): match
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream send request
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream send request body
+2022/01/19 15:03:55 [debug] 46632#46632: *20 chain writer buf fl:1 s:105
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B35710:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001CDD230:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 chain writer in: 0000000001B35710
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001CD4D30:80
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C3DE00:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C152D0:16384
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C2A640:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL buf copy: 105
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL to write: 105
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_write: 105
+2022/01/19 15:03:55 [debug] 46632#46632: *20 chain writer out: 0000000000000000
+2022/01/19 15:03:55 [debug] 46632#46632: *20 event timer del: 5: 10094575278
+2022/01/19 15:03:55 [debug] 46632#46632: *20 event timer add: 5: 60000:10094575284
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream process header
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C6F870:4096
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C80700:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B85E20:384
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001CD4D90:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C477B0:96
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C708A0:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_read: -1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_get_error: 2
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream request: &quot;/?&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream dummy handler
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream request: &quot;/?&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream process header
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_read: 204
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_read: -1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_get_error: 2
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B2D1E0:6
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C86C70:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http proxy status 200 &quot;200 OK&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C66C60:26
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C3EB20:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http proxy header: &quot;Server: nginx/1.20.2&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C3DD40:39
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C2A970:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http proxy header: &quot;Date: Wed, 19 Jan 2022 07:03:55 GMT&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B9E130:50
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C04730:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http proxy header: &quot;Content-Type: application/octet-stream&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B31780:32
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BE4C30:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http proxy header: &quot;Content-Length: 47&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001CB8A50:27
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BE4C50:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http proxy header: &quot;Connection: close&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http proxy header done
+2022/01/19 15:03:55 [debug] 46632#46632: *20 xslt filter header
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C51C50:80
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BA2990:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001CB8BB0:196
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BA29B0:16
+# 上游的响应结果
+2022/01/19 15:03:55 [debug] 46632#46632: *20 HTTP/1.1 200 OK
+Server: openresty/1.19.9.1 (no pool)
+Date: Wed, 19 Jan 2022 07:03:55 GMT
+Content-Type: application/octet-stream
+Content-Length: 47
+Connection: keep-alive
+
+2022/01/19 15:03:55 [debug] 46632#46632: *20 write new buf t:1 f:0 0000000001CB8BB0, pos 0000000001CB8BB0, size: 178 file: 0, size: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http write filter: l:0 f:0 s:178
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http cacheable: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C83470:280
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B5E900:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B5E920:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B6A2C0:16
+# filter
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http proxy filter init s:200 h:0 c:0 l:47
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream process upstream
+2022/01/19 15:03:55 [debug] 46632#46632: *20 pipe read upstream: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 pipe preread: 47
+2022/01/19 15:03:55 [debug] 46632#46632: *20 pipe buf free s:0 t:1 f:0 0000000001C6F870, pos 0000000001C6F90D, size: 47 file: 0, size: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 pipe length: 47
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001B6A2E0:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BCDB60:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C47870:80
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BCDB80:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 input buf #0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 pipe write downstream: 1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 pipe write downstream flush in
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http output filter &quot;/?&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http copy filter: &quot;/?&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C3EFC0:136
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C478D0:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 image filter
+2022/01/19 15:03:55 [debug] 46632#46632: *20 xslt filter body
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http postpone filter &quot;/?&quot; 0000000001B6A2E0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 write old buf t:1 f:0 0000000001CB8BB0, pos 0000000001CB8BB0, size: 178 file: 0, size: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 write new buf t:1 f:0 0000000001C6F870, pos 0000000001C6F90D, size: 47 file: 0, size: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http write filter: l:0 f:0 s:225
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http copy filter: 0 &quot;/?&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 pipe write downstream done
+2022/01/19 15:03:55 [debug] 46632#46632: *20 event timer: 5, old: 10094575284, new: 10094575284
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream exit: 0000000000000000
+2022/01/19 15:03:55 [debug] 46632#46632: *20 finalize http upstream request: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 finalize http proxy request
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free rr peer 1 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 SSL_shutdown: 1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 close http upstream connection: 5
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C2A640, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C3DE00, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BB0EF0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 event timer del: 5: 10094575284
+2022/01/19 15:03:55 [debug] 46632#46632: *20 reusable connection: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http upstream temp fd: -1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001CD4D30:80
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BB0EF0:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http output filter &quot;/?&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http copy filter: &quot;/?&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 image filter
+2022/01/19 15:03:55 [debug] 46632#46632: *20 xslt filter body
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http postpone filter &quot;/?&quot; 00007FFF07F3B090
+2022/01/19 15:03:55 [debug] 46632#46632: *20 write old buf t:1 f:0 0000000001CB8BB0, pos 0000000001CB8BB0, size: 178 file: 0, size: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 write old buf t:1 f:0 0000000001C6F870, pos 0000000001C6F90D, size: 47 file: 0, size: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C3DE00:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C2A640:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 write new buf t:0 f:0 0000000000000000, pos 0000000000000000, size: 0 file: 0, size: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http write filter: l:1 f:0 s:225
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http write filter limit 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 writev: 225 of 225
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http write filter 0000000000000000
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http copy filter: 0 &quot;/?&quot;
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http finalize request: 0, &quot;/?&quot; a:1, c:1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 set http keepalive handler
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http close request
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http log handler
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C7F320:28
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C3DD70:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C54BC0:26
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C54B80:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C70960:255
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C54BA0:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C54BA0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C54B80, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C3DD70, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C2A640, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BB0EF0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C478D0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BCDB80, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BCDB60, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001B6A2C0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001B5E900, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BA29B0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BA2990, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BE4C50, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BE4C30, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C04730, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C2A970, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C3EB20, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C86C70, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C708A0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001CD4D90, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C80700, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001CDD230, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001B620F0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001B8BE70, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C07050, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C047A0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C04980, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C05F60, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001B8C0D0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C04A80, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BEE440, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C04B80, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BB4070, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BB3620, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001B2F3F0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001B91880, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001B4AAF0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001B9A380, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BAF720, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BAFC20, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BB0FA0, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001B9F340, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001C86610
+2022/01/19 15:03:55 [debug] 46632#46632: *20 hc free: 0000000000000000
+2022/01/19 15:03:55 [debug] 46632#46632: *20 hc busy: 0000000000000000 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 tcp_nodelay
+2022/01/19 15:03:55 [debug] 46632#46632: *20 reusable connection: 1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 event timer add: 3: 65000:10094580284
+2022/01/19 15:03:55 [debug] 46632#46632: *20 http keepalive handler
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001C86610:1024
+2022/01/19 15:03:55 [debug] 46632#46632: *20 malloc: 0000000001BAE800:16
+2022/01/19 15:03:55 [debug] 46632#46632: *20 recv: eof:1, avail:-1
+2022/01/19 15:03:55 [debug] 46632#46632: *20 recv: fd:3 0 of 1024
+2022/01/19 15:03:55 [info] 46632#46632: *20 client 10.157.89.215 closed keepalive connection
+2022/01/19 15:03:55 [debug] 46632#46632: *20 close http connection: 3
+2022/01/19 15:03:55 [debug] 46632#46632: *20 event timer del: 3: 10094580284
+2022/01/19 15:03:55 [debug] 46632#46632: *20 reusable connection: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BAE800, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BFA580, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BFA720, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BFBC10, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BFBD10, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001BFBE10, unused: 0
+2022/01/19 15:03:55 [debug] 46632#46632: *20 free: 0000000001B5E280, unused: 0
+</pre></div>
+</div>
+</section>
+<section id="openresty">
+<h2><span class="section-number">6.16. </span>openresty简介<a class="headerlink" href="#openresty" title="Permalink to this headline"></a></h2>
+<p>官方地址： <a class="reference external" href="https://openresty.org/cn/">https://openresty.org/cn/</a></p>
+<p>详细的需要看对应组件的帮助文档。 github有对应的功能描述。</p>
+<p>主要组成</p>
+<img alt="../_images/nginx38.png" src="../_images/nginx38.png" />
+<p>运行机制</p>
+<img alt="../_images/nginx39.png" src="../_images/nginx39.png" />
+</section>
+<section id="openrestysdk">
+<h2><span class="section-number">6.17. </span>openrestysdk分类<a class="headerlink" href="#openrestysdk" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>cosocket通信</p></li>
+<li><p>共享内存的字典</p></li>
+<li><p>定时器</p></li>
+<li><p>基于携程的并发编程</p></li>
+<li><p>修改请求</p></li>
+<li><p>修改响应</p></li>
+<li><p>自请求</p></li>
+</ul>
+</section>
+<section id="id5">
+<h2><span class="section-number">6.18. </span>openresty的使用要点<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>不破坏事件驱动实现，不要阻塞nginx进度调度。</p></li>
+<li><p>不破坏nginx低内存的消耗优点</p></li>
+<li><p>保持lua代码高效</p></li>
+</ul>
+</section>
+<section id="openrestrynginx">
+<h2><span class="section-number">6.19. </span>openrestry的nginx核心模块<a class="headerlink" href="#openrestrynginx" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>ndk_http_module: 开发工具包</p></li>
+<li><p>ngx_http_lua_module:openrestry提供http服务lua编程能力的核心模块</p></li>
+<li><p>ngx_http_lua_upstream_mudule: http_lua的补充，提供upstream api。</p></li>
+<li><p>ngx_stream_lua_module: 提供四层服务lua编程能力的核心模块。</p></li>
+</ul>
+</section>
 <section id="id6">
-<h2><span class="section-number">6.15. </span>debug日志分析<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
-<dl class="simple">
-<dt>建立连接</dt><dd><p>ssl握手</p>
-</dd>
-<dt>接受请求的头部</dt><dd><p>解析行
-解析头部</p>
-</dd>
-<dt>11阶段处理</dt><dd><p>查找location
-反向代理构造上游的请求
-接收客户端请求包体</p>
-</dd>
-</dl>
-<p>构造响应头
-发送响应</p>
-<blockquote>
-<div><p>过滤模块</p>
-</div></blockquote>
+<h2><span class="section-number">6.20. </span>openrestry的nginx工具模块<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>ngx_http_headers_more_filter_module: rewrite阶段处理请求，修改请求响应的header头的。</p></li>
+<li><p>ngx_http_rds_json——filter_module: 过滤模块，将rds格式的转换为json格式。</p></li>
+</ul>
+</section>
+<section id="openrestrylua">
+<h2><span class="section-number">6.21. </span>openrestry的官方lua模块<a class="headerlink" href="#openrestrylua" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>lua_redis_parser: 将redis相应解析为lua数据结构。</p></li>
+<li><p>lua_rds_parser: 将mysql postgress数据库响应解析为lua数据结构</p></li>
+<li><p>lua_restry_dns: 基于cosocket实现dns协议的通信。</p></li>
+<li><p>lua_resty_redis: 基于ngx.socket.tcp实现的redis客户端。</p></li>
+<li><p>lua_resty_string: 字符串转换函数</p></li>
+</ul>
+<p>详细模块参考： <a class="reference external" href="https://openresty.org/cn/components.html">https://openresty.org/cn/components.html</a></p>
+</section>
+<section id="nginxlua">
+<h2><span class="section-number">6.22. </span>如何在nginx中嵌入lua<a class="headerlink" href="#nginxlua" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx40.png" src="../_images/nginx40.png" />
+</section>
+<section id="id7">
+<h2><span class="section-number">6.23. </span>在nginx过程嵌入lua代码<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>init_by_lua , init_by_lua_block , init_by_lua_file : master启动。</p></li>
+<li><p>init_worker_by_lua: work启动的时候调用</p></li>
+<li><p>set_by_lua:</p></li>
+<li><p>rewrite_by_lua:</p></li>
+<li><p>access_by_lua:</p></li>
+<li><p>content_by_lua:</p></li>
+<li><p>log_by_lua:</p></li>
+</ul>
+</section>
+<section id="lua-ffi">
+<h2><span class="section-number">6.24. </span>lua ffi<a class="headerlink" href="#lua-ffi" title="Permalink to this headline"></a></h2>
+<p>提供一种lua语音使用c语言函数的功能。</p>
+</section>
+<section id="id8">
+<h2><span class="section-number">6.25. </span>系统级配置指令<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>lua_malloc_trim: 每N个请求使用mallock_trim方法，将缓存的空闲内存归还操作系统。</p></li>
+<li><p>lua_code_cache: lua vm的所有请求共享</p></li>
+<li><p>lua_package_path: 设置lua模块的路径</p></li>
+<li><p>lua_package_cpath: 设置lua调用c模块的路径地址。</p></li>
+</ul>
+</section>
+<section id="id9">
+<h2><span class="section-number">6.26. </span>nginx的变量<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h2>
+<p>ngx.var.VAR_NAME 可以访问和修改变量</p>
+</section>
+<section id="ngx-req">
+<h2><span class="section-number">6.27. </span>ngx.req<a class="headerlink" href="#ngx-req" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>ngx.req.get_headers</p></li>
+<li><p>ngx.req.get_method</p></li>
+<li><p>ngx.req.http_version</p></li>
+<li><p>ngx.req.get_uri_args</p></li>
+<li><p>ngx.arg[index]</p></li>
+<li><p>ngx.req.get_post_args</p></li>
+<li><p>ngx.req.read_body</p></li>
+<li><p>nginx.req.get_body_data</p></li>
+<li><p>nginx.req.get_body_file</p></li>
+</ul>
+</section>
+<section id="sdk">
+<h2><span class="section-number">6.28. </span>发送响应sdk<a class="headerlink" href="#sdk" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>ngx.print</p></li>
+<li><p>ngx.say</p></li>
+<li><p>ngx.flush</p></li>
+<li><p>ngx.exit</p></li>
+<li><p>ngx.eof</p></li>
+</ul>
+</section>
+<section id="id10">
+<h2><span class="section-number">6.29. </span>日志<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h2>
+<p>详细参考： <a class="reference external" href="https://github.com/openresty/lua-nginx-module#ngxlog">https://github.com/openresty/lua-nginx-module#ngxlog</a></p>
+</section>
+<section id="cosocket">
+<h2><span class="section-number">6.30. </span>cosocket<a class="headerlink" href="#cosocket" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>lua_socket_connect_time: 连接超时时间</p></li>
+<li><p>lua_socket_send_timeout: 2次写超时时间</p></li>
+<li><p>lua_socket_read_timeout: 2次读超时时间</p></li>
+<li><p>lua_socket_bufer_size：  设置读缓冲区大小</p></li>
+<li><p>lua_socket_pool_size: 设置连接池最大连接数</p></li>
+<li><p>lua_socket_keepalive_timeout: 连接空闲时间</p></li>
+<li><p>lua_socket_log_errors: 是否记录错误日志到nginx的error.log中。</p></li>
+<li><p>ngx.socket.tcp : tcp相关方法函数</p></li>
+<li><p>nginx.socket.socket: 获取socket对象</p></li>
+<li><p>ngx.socket.udp： udp client</p></li>
+</ul>
+</section>
+<section id="id11">
+<h2><span class="section-number">6.31. </span>多协程方法<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>ngx.thread.spawn ： 生成轻量级线程。</p></li>
+<li><p>coroutine create : 创建lua协程。</p></li>
+</ul>
+</section>
+<section id="la-resty-lock">
+<h2><span class="section-number">6.32. </span>la_resty_lock锁<a class="headerlink" href="#la-resty-lock" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>lock: 锁定</p></li>
+<li><p>unlock: 解锁</p></li>
+<li><p>expire: timeout 最大等待时间。</p></li>
+</ul>
+</section>
+<section id="id12">
+<h2><span class="section-number">6.33. </span>定时器<a class="headerlink" href="#id12" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>ngx.timer.at 定时器触发后执行callback</p></li>
+<li><p>ngx.timer.every: 每多久执行一次</p></li>
+<li><p>ngx.timer.runing_count: 运行的定时器数量</p></li>
+<li><p>ngx.timer.pending_count 等待执行的定时器数量</p></li>
+</ul>
+</section>
+<section id="id13">
+<h2><span class="section-number">6.34. </span>共享内存<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h2>
+<p>提供跨work的共享内存共享内容机制。是原子的，线程安全的。ngx.shared.DICT.</p>
+</section>
+<section id="id14">
+<h2><span class="section-number">6.35. </span>nginx主请求和子请求<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h2>
+<ol class="arabic simple">
+<li><p>子请求的生命周期是依赖父请求</p></li>
+<li><p>父请求可以通过postpone_filter处理子请求的响应。</p></li>
+<li><p>ngx.location.capture 可以生成子请求。</p></li>
+</ol>
+</section>
+<section id="openrestrywaf">
+<h2><span class="section-number">6.36. </span>基于openrestry的waf防火墙<a class="headerlink" href="#openrestrywaf" title="Permalink to this headline"></a></h2>
+<p>github search waf</p>
 </section>
 </section>
 

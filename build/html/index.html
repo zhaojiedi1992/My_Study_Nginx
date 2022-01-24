@@ -234,7 +234,75 @@
 <li class="toctree-l2"><a class="reference internal" href="nginx/04-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1.html#udp">4.50. udp反向代理</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html">5. nginx优化</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html">5. nginx优化</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id1">5.1. 优化方法论</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#cpu">5.2. 如何有效使用CPU</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#worker">5.2.1. 设置worker进程的数量</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id2">5.2.2. 为何cpu可以同时运行多个进程</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id3">5.2.3. 确保处于运行态</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id4">5.2.4. 减少进程切换</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id5">5.2.5. 如何查看上下文切换</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id6">5.2.6. 什么决定cpu时间片的大小</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id7">5.3. 多核间如何负载均衡</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id8">5.3.1. 多队列网卡对多核cpu的优化</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id9">5.3.2. 提升cpu缓存命中率</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#tcp">5.4. 控制tcp握手参数</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id10">5.5. 建立tcp连接的优化</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id11">5.5.1. 句柄的上限</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id12">5.5.2. 队列长度</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#tcp-fast-open">5.5.3. tcp fast open</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id13">5.6. 滑动窗口和缓冲区</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id14">5.6.1. 滑动窗口</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id15">5.6.2. 发送tcp消息</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id16">5.6.3. tcp接收消息</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id17">5.6.4. nginx的超时时间和滑动窗口</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id18">5.6.5. 丢包重传</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id19">5.7. 优化滑动窗口和传输效率</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id20">5.7.1. tcp缓冲区</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#nagle">5.7.2. nagle算法</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#cork">5.7.3. cork算法</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id21">5.8. 慢启动和拥塞窗口</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id22">5.8.1. 流量控制</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id23">5.8.2. 拥塞处理</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#tcp-keepalive">5.9. tcp keepalive</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#timewait">5.10. 减少连接的timewait的状态数量</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#lingering-close">5.11. lingering_close 延迟关闭连接</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id24">5.12. 应用层协议优化</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#tls-ssl">5.13. tls/ssl中的会话票证</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#http">5.14. http长连接</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#gzip">5.15. gzip压缩</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#http2-0">5.16. 升级更高效的http2.0协议</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#io">5.17. 磁盘io的优化</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id25">5.17.1. 直接io</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#aio">5.17.2. aio</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id26">5.17.3. 定义线程池</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id27">5.18. 减少磁盘读写次数</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#empty-gif">5.18.1. empty_gif模块</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#id28">5.18.2. 日志压缩</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#error-log">5.18.3. error_log日志输出到内存</a></li>
+<li class="toctree-l3"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#sysylog">5.18.4. sysylog</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#copygzip-static">5.19. 零copy和gzip_static</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#tcmalloc">5.20. tcmalloc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#google-perf">5.21. 使用google perf 分析</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/05-nginx%E4%BC%98%E5%8C%96.html#statunginx">5.22. statu模块监控nginx数据</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html">6. openresty及nginx源码</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id1">6.1. 第三方模块源码的快速阅读方法</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#config">6.2. config结构</a></li>
@@ -250,7 +318,28 @@
 <li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#gdb">6.12. gdb的基本使用</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#debug">6.13. debug定位问题</a></li>
 <li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#debugerror-log">6.14. 控制debug级别的error.log日志输出</a></li>
-<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id6">6.15. debug日志分析</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id4">6.15. debug日志分析</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#openresty">6.16. openresty简介</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#openrestysdk">6.17. openrestysdk分类</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id5">6.18. openresty的使用要点</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#openrestrynginx">6.19. openrestry的nginx核心模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id6">6.20. openrestry的nginx工具模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#openrestrylua">6.21. openrestry的官方lua模块</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#nginxlua">6.22. 如何在nginx中嵌入lua</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id7">6.23. 在nginx过程嵌入lua代码</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#lua-ffi">6.24. lua ffi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id8">6.25. 系统级配置指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id9">6.26. nginx的变量</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#ngx-req">6.27. ngx.req</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#sdk">6.28. 发送响应sdk</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id10">6.29. 日志</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#cosocket">6.30. cosocket</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id11">6.31. 多协程方法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#la-resty-lock">6.32. la_resty_lock锁</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id12">6.33. 定时器</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id13">6.34. 共享内存</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#id14">6.35. nginx主请求和子请求</a></li>
+<li class="toctree-l2"><a class="reference internal" href="nginx/06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html#openrestrywaf">6.36. 基于openrestry的waf防火墙</a></li>
 </ul>
 </li>
 </ul>

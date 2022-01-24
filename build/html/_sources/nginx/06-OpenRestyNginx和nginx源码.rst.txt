@@ -96,15 +96,6 @@ if指令连续出现
 ------------------------------------
 演示案例
 
-.. literalinclude:: ../files/if_double.conf
-   :encoding: utf-8
-   :language: bash
-
-验证下
-
-.. code-block:: bash 
-    #todo 
-
 具体原因分析
 
 if指令是rewrite阶段的执行的，会在if条件为真的时候，替换掉当前请求的配置，if是向上继承的，在rewrite阶段顺序执行时，
@@ -133,6 +124,7 @@ worker_rlimit_core限制core文件大小，working_directory 控制coredump放�
     working_directory /tmp/nginx;
 
 发送信号
+
 .. code-block:: bash
 
     # 确认一个work进程id
@@ -192,7 +184,6 @@ gdb分析上面产生的core文件
    :language: text
    :emphasize-lines: 1,2,21,38,57
 
-todo
 
 debug定位问题
 ------------------------------------
@@ -200,8 +191,6 @@ debug定位问题
 
 - abort: 生成coredump后结束进程
 - stop: 结束进程
-
-todo
 
 
 控制debug级别的error.log日志输出
@@ -213,22 +202,201 @@ debug_connection针对特定客户端打印debug级别的日志，其他的日�
 debug日志分析
 ------------------------------------
 
-建立连接
-    ssl握手
-接受请求的头部
-    解析行
-    解析头部
-11阶段处理
-    查找location
-    反向代理构造上游的请求
-    接收客户端请求包体
-构造响应头
-发送响应
-    过滤模块
+.. code-block:: text 
+
+    建立连接
+        ssl握手
+    接受请求的头部
+        解析行
+        解析头部
+    11阶段处理
+        查找location
+        反向代理构造上游的请求
+        接收客户端请求包体
+    构造响应头
+    发送响应
+        过滤模块
+
+.. literalinclude:: ../files/error.log
+   :encoding: utf-8
+   :language: text
+
+openresty简介
+------------------------------------
+
+官方地址： https://openresty.org/cn/
+
+详细的需要看对应组件的帮助文档。 github有对应的功能描述。
 
 
+主要组成
+
+.. image:: ../images/nginx38.png
+
+运行机制
+
+.. image:: ../images/nginx39.png
 
 
+openrestysdk分类
+------------------------------------
 
+- cosocket通信
+- 共享内存的字典
+- 定时器
+- 基于携程的并发编程
+- 修改请求
+- 修改响应
+- 自请求
+
+openresty的使用要点
+------------------------------------
+
+- 不破坏事件驱动实现，不要阻塞nginx进度调度。
+- 不破坏nginx低内存的消耗优点
+- 保持lua代码高效
+
+openrestry的nginx核心模块
+------------------------------------
+
+- ndk_http_module: 开发工具包
+- ngx_http_lua_module:openrestry提供http服务lua编程能力的核心模块
+- ngx_http_lua_upstream_mudule: http_lua的补充，提供upstream api。
+- ngx_stream_lua_module: 提供四层服务lua编程能力的核心模块。
+
+openrestry的nginx工具模块
+------------------------------------
+
+- ngx_http_headers_more_filter_module: rewrite阶段处理请求，修改请求响应的header头的。
+- ngx_http_rds_json——filter_module: 过滤模块，将rds格式的转换为json格式。
+  
+openrestry的官方lua模块
+------------------------------------
+
+- lua_redis_parser: 将redis相应解析为lua数据结构。
+- lua_rds_parser: 将mysql postgress数据库响应解析为lua数据结构
+- lua_restry_dns: 基于cosocket实现dns协议的通信。
+- lua_resty_redis: 基于ngx.socket.tcp实现的redis客户端。
+- lua_resty_string: 字符串转换函数
+  
+详细模块参考： https://openresty.org/cn/components.html
+
+
+如何在nginx中嵌入lua
+------------------------------------
+
+.. image:: ../images/nginx40.png
+
+
+在nginx过程嵌入lua代码
+------------------------------------
+
+- init_by_lua , init_by_lua_block , init_by_lua_file : master启动。
+- init_worker_by_lua: work启动的时候调用
+- set_by_lua: 
+- rewrite_by_lua: 
+- access_by_lua: 
+- content_by_lua: 
+- log_by_lua: 
+
+
+lua ffi
+------------------------------------
+提供一种lua语音使用c语言函数的功能。
+
+系统级配置指令
+------------------------------------
+
+- lua_malloc_trim: 每N个请求使用mallock_trim方法，将缓存的空闲内存归还操作系统。
+- lua_code_cache: lua vm的所有请求共享
+- lua_package_path: 设置lua模块的路径
+- lua_package_cpath: 设置lua调用c模块的路径地址。
+
+
+nginx的变量
+------------------------------------
+
+ngx.var.VAR_NAME 可以访问和修改变量
+
+ngx.req
+------------------------------------
+
+- ngx.req.get_headers 
+- ngx.req.get_method
+- ngx.req.http_version
+- ngx.req.get_uri_args
+- ngx.arg[index]
+- ngx.req.get_post_args 
+- ngx.req.read_body 
+- nginx.req.get_body_data
+- nginx.req.get_body_file
+  
+发送响应sdk
+------------------------------------
+- ngx.print 
+- ngx.say 
+- ngx.flush 
+- ngx.exit 
+- ngx.eof
+
+日志
+------------------------------------
+
+详细参考： https://github.com/openresty/lua-nginx-module#ngxlog
+
+cosocket
+------------------------------------
+
+- lua_socket_connect_time: 连接超时时间
+- lua_socket_send_timeout: 2次写超时时间
+- lua_socket_read_timeout: 2次读超时时间
+- lua_socket_bufer_size：  设置读缓冲区大小
+- lua_socket_pool_size: 设置连接池最大连接数
+- lua_socket_keepalive_timeout: 连接空闲时间
+- lua_socket_log_errors: 是否记录错误日志到nginx的error.log中。
+
+- ngx.socket.tcp : tcp相关方法函数
+- nginx.socket.socket: 获取socket对象
+- ngx.socket.udp： udp client 
+
+
+多协程方法
+------------------------------------
+
+- ngx.thread.spawn ： 生成轻量级线程。
+- coroutine create : 创建lua协程。
+
+la_resty_lock锁
+------------------------------------
+
+- lock: 锁定
+- unlock: 解锁
+- expire: timeout 最大等待时间。
+  
+
+定时器
+------------------------------------
+
+- ngx.timer.at 定时器触发后执行callback
+- ngx.timer.every: 每多久执行一次
+- ngx.timer.runing_count: 运行的定时器数量
+- ngx.timer.pending_count 等待执行的定时器数量
+
+共享内存
+------------------------------------
+提供跨work的共享内存共享内容机制。是原子的，线程安全的。ngx.shared.DICT.
+
+nginx主请求和子请求
+------------------------------------
+
+1. 子请求的生命周期是依赖父请求
+2. 父请求可以通过postpone_filter处理子请求的响应。
+3. ngx.location.capture 可以生成子请求。
+
+
+基于openrestry的waf防火墙
+------------------------------------
+
+github search waf 
 
 

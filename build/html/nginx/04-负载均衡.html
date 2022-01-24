@@ -1003,6 +1003,29 @@ proxy_set_header Connection “upgrade”;</p>
 <p>配置一个上游服务</p>
 <p>就是简单配置的静态集群的。</p>
 <p>配置openrestry</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>proxy_cache_path /root/openresty/nginx/cache levels=2:2 keys_zone=five:10m loader_threshold=300 
+                     loader_files=200 max_size=200m inactive=1m;
+
+server {
+	listen 8084;
+	server_name n-slice.linuxpanda.tech;
+	error_log myerror.log debug;
+
+	root html;
+
+	location / {
+		# 这里为了可以在响应中看到是否命中，添加个header看看
+		proxy_cache five;
+		proxy_cache_valid 200 206 1m;
+		add_header X-Cache-Status $upstream_cache_status;
+
+		proxy_set_header  Range $slice_range;
+		proxy_cache_key $scheme$uri$slice_range ;
+		proxy_pass http://localhost:8005;
+	}
+}
+</pre></div>
+</div>
 <p>验证下</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-slice.linuxpanda.tech:8084/big.avi -r 100-200</span>
 <span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># tail -n 2 /root/openresty/nginx/logs/access.log</span>
@@ -1031,6 +1054,21 @@ proxy_set_header Connection “upgrade”;</p>
 <li><p>目录是否存在</p></li>
 </ul>
 <p>配置如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8084;
+	server_name n-openfilecache.linuxpanda.tech;
+
+	root html;
+
+	location / {
+		open_file_cache max=10 inactive=300s;
+		open_file_cache_min_uses 1; 
+		open_file_cache_valid 300s; 
+		open_file_cache_errors on;	
+	}
+}
+</pre></div>
+</div>
 <p>验证</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 这里找到对应nginx的work进程，看看这个具体进程的系统调用</span>
 <span class="o">[</span>root@zhaojiedi-elk-2 ~<span class="o">]</span><span class="c1"># strace -p 14160</span>
