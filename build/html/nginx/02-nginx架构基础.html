@@ -173,6 +173,19 @@
 <li><p>每次只处理活跃连接。</p></li>
 <li><p>实现层面红黑树和链表高效。</p></li>
 </ul>
+<p>select缺点</p>
+<ul class="simple">
+<li><p>每次调用selet都需要将fd集合从用户态copy到内核态，</p></li>
+<li><p>在内核态遍历所有fd</p></li>
+<li><p>select默认支持的文件描述符也比较小。</p></li>
+</ul>
+<p>poll模式基本和select一致。 文件描述符支持更多。</p>
+<p>epoll</p>
+<ul class="simple">
+<li><p>线程安全的。</p></li>
+<li><p>使用mmap共享用户和内核部分空间，避免来回copy.</p></li>
+<li><p>基于事件驱动，注册事件的时候注册了callback回调函数的， epoll_wait只返回发生的事件。</p></li>
+</ul>
 </section>
 <section id="id6">
 <h2><span class="section-number">2.9. </span>请求切换<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
