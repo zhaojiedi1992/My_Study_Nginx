@@ -469,7 +469,7 @@ location指令
 
 - 精确匹配优先
 - ^~禁用正则次之
-- 最长正则
+- 最前面的匹配正则
 - 最长匹配前缀
   
 
@@ -641,9 +641,10 @@ precontent 阶段的try_files
 依次访问多个url对应的文件，那就存着的时候直接返回内容，如果不存在则按照最后一个url响应。
 
 一个样例
+
 .. code-block:: bash 
 
-  try_files /system/maintenance.html
+      try_files /system/maintenance.html
                 $uri $uri/index.html $uri.html
                 @mongrel;
 
@@ -654,7 +655,7 @@ precontent 阶段的try_files
 
 root和alias指令差异
 ------------------------------------
-root会将完成url映射近文件路径中，alias只会讲location后的url映射到文件路径中。
+root会将完成url映射近文件路径中，alias只会将location后的url映射到文件路径中。
 
 样例配置如下
 
@@ -664,9 +665,9 @@ root会将完成url映射近文件路径中，alias只会讲location后的url映
 
 测试效果
 
-.. code-block:: bash
+.. code-block:: text
 
-  # 可以看到这个请求命中了第一个location了， 实际找的文件是   nginx基础目录/root/openresty/nginx + root指定位置html + 请求的路径/root 
+  # 可以看到这个请求命中了第一个location了， 实际找的文件是   nginx基础目录/root/openresty/nginx + root指定位置html + 请求的路径/root 
   curl http://n-alias.linuxpanda.tech:8084/root
   [root@zhaojiedi-elk-2 conf]# tail -n1 ../logs/access.log
   10.157.89.215 - - [07/Dec/2021:19:24:24 +0800] "GET /root HTTP/1.1" 404 159 "-" "curl/7.29.0" "-"request_filename=/root/openresty/nginx/html/root document_root=/root/openresty/nginx/html realpath_root=/root/openresty/nginx/html
@@ -1043,10 +1044,18 @@ geo模块
 geoip模块基于maxmind数据库获取
 ------------------------------------
 
+官方参考： https://nginx.org/en/docs/stream/ngx_stream_geoip_module.html
+
 需要安装c开发库， 编译启用geoip 然后配置nginx 。 详细操作如下
+
 
 .. code-block:: bash 
 
+  # 下载数据库dat文件
+  #下周geoip组件
+  # 编译支持
+  # nginx配置支持
+  
 
 
 geo_city主要变量说明

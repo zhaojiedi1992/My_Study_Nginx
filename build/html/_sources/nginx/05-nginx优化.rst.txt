@@ -378,6 +378,8 @@ error_log日志输出到内存
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 开发环境中定位问题打开debug级别的日志，但对debug的级别大量日志引发的性能问题不能容忍，将日志打印到内存中。
 
+官方参考： https://nginx.org/en/docs/debugging_log.html
+
 sysylog
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 官方参考： https://nginx.org/en/docs/syslog.html

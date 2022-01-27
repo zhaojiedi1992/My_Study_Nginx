@@ -331,9 +331,11 @@ server {
 <h2><span class="section-number">4.12. </span>proxy模块的基本使用<a class="headerlink" href="#proxy" title="Permalink to this headline"></a></h2>
 <p>这个模块是支持http和https协议2种类型的代理的，
 proxy 后面的url必须以http或者https开头， 接下来是域名、ip 、socket或者upstream名字。前面2个是可以添加端口的。</p>
-<p>如果url参数带不带uri差异是比较大的。
-- 不携带uri: 直接转发给上游
-- 携带uri: 将location匹配的部分进行替换。</p>
+<p>如果url参数带不带uri差异是比较大的。</p>
+<ul class="simple">
+<li><p>不携带uri: 直接转发给上游</p></li>
+<li><p>携带uri: 将location匹配的部分进行替换。</p></li>
+</ul>
 <p>提前准备一个后端</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>server <span class="o">{</span>
         listen <span class="m">8001</span> <span class="p">;</span>
@@ -425,7 +427,7 @@ server {
 <h2><span class="section-number">4.17. </span>接收上游的包体<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h2>
 <ul class="simple">
 <li><p>proxy_buffers 这个用于存放上游的http包体大小，8 8k参数是如果8k足够就只分配1个8k的， 不够继续分配，最多8个8k。</p></li>
-<li><p>proxy_buffering:</p></li>
+<li><p>proxy_buffering: 禁用的话，会收到上游响应后立刻同步给客户端响应。如果开启，放到内存，内存放不下，写临时文件。</p></li>
 <li><p>proxy_max_temp_file_size: 写入磁盘的文件的最大值。</p></li>
 <li><p>proxy_temp_file_write_size: 每次写入字节限制。</p></li>
 <li><p>proxy_temp_path: 指定临时文件目录和存储级别。</p></li>
@@ -603,7 +605,7 @@ n-ssl2.linuxpanda.tech.key n-ssl2.linuxpanda.tech.crt
 </dd>
 </dl>
 <p>建议同时使用浏览器缓存和nginx缓存。</p>
-<img alt="../_images/nginx28.png" src="../_images/nginx28.png" />
+<a class="reference internal image-reference" href="../_images/nginx28.png"><img alt="../_images/nginx28.png" src="../_images/nginx28.png" style="width: 1146.0px; height: 594.0px;" /></a>
 </section>
 <section id="etag">
 <h2><span class="section-number">4.24. </span>etag<a class="headerlink" href="#etag" title="Permalink to this headline"></a></h2>
@@ -966,13 +968,12 @@ v1
 <h2><span class="section-number">4.40. </span>nginx实现websocket代理<a class="headerlink" href="#nginxwebsocket" title="Permalink to this headline"></a></h2>
 <p>proxy模块提供
 官方参考 <a class="reference external" href="https://nginx.org/en/docs/http/websocket.html">https://nginx.org/en/docs/http/websocket.html</a></p>
-<p>核心配置片段
-.. code-block:: bash</p>
-<blockquote>
-<div><p>proxy_http_version 1.1;
-proxy_set_header Upgrade $http_upgrade;
-proxy_set_header Connection “upgrade”;</p>
-</div></blockquote>
+<p>核心配置片段</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>proxy_http_version <span class="m">1</span>.1<span class="p">;</span>
+proxy_set_header Upgrade <span class="nv">$http_upgrade</span><span class="p">;</span>
+proxy_set_header Connection <span class="s2">&quot;upgrade&quot;</span><span class="p">;</span>
+</pre></div>
+</div>
 <p>配置</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
 	listen 8085;

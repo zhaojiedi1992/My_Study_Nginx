@@ -198,7 +198,8 @@ proxy模块的基本使用
 这个模块是支持http和https协议2种类型的代理的， 
 proxy 后面的url必须以http或者https开头， 接下来是域名、ip 、socket或者upstream名字。前面2个是可以添加端口的。 
 
-如果url参数带不带uri差异是比较大的。 
+如果url参数带不带uri差异是比较大的。
+
 - 不携带uri: 直接转发给上游
 - 携带uri: 将location匹配的部分进行替换。
 
@@ -282,7 +283,7 @@ proxy 后面的url必须以http或者https开头， 接下来是域名、ip 、s
 ------------------------------------
 
 - proxy_buffers 这个用于存放上游的http包体大小，8 8k参数是如果8k足够就只分配1个8k的， 不够继续分配，最多8个8k。
-- proxy_buffering: 
+- proxy_buffering: 禁用的话，会收到上游响应后立刻同步给客户端响应。如果开启，放到内存，内存放不下，写临时文件。
 - proxy_max_temp_file_size: 写入磁盘的文件的最大值。
 - proxy_temp_file_write_size: 每次写入字节限制。
 - proxy_temp_path: 指定临时文件目录和存储级别。
@@ -434,6 +435,7 @@ nginx缓存：
 建议同时使用浏览器缓存和nginx缓存。
 
 .. image:: ../images/nginx28.png
+    :scale: 50 %
 
 etag
 ------------------------------------
@@ -751,6 +753,7 @@ proxy模块提供
 官方参考 https://nginx.org/en/docs/http/websocket.html
 
 核心配置片段
+
 .. code-block:: bash 
 
     proxy_http_version 1.1;

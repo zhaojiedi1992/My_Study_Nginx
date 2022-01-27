@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4. 负载均衡 &mdash; My_Study_Nginx v1.0 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="5. nginx优化" href="05-nginx%E4%BC%98%E5%8C%96.html" />
+    <link rel="prev" title="3. nginx的http模块" href="03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> My_Study_Nginx
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">nginx</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="01-%E5%88%9D%E8%AF%86nginx.html">1. 初识nginx</a></li>
+<li class="toctree-l1"><a class="reference internal" href="02-nginx%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80.html">2. nginx架构基础</a></li>
+<li class="toctree-l1"><a class="reference internal" href="03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html">3. nginx的http模块</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. 负载均衡</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#nginx">4.1. nginx扩展方式</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">4.2. 支持的反向代理协议</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">4.3. 负载均衡基础指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">4.4. 对上游服务使用长连接</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">4.5. 轮训配置样例</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#hash">4.6. 反向代理的hash算法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id6">4.7. 一致性hash算法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id7">4.8. 连接做少的上游服务器</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#upsteam">4.9. upsteam共享内存</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id8">4.10. upsteam模块提供的变量</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#http">4.11. http反向代理的处理流程</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#proxy">4.12. proxy模块的基本使用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id9">4.13. 修改向后端的请求行</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id10">4.14. 接收客户端请求的包体</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id11">4.15. 向上游建立连接</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id12">4.16. 接收上游的响应头部</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id13">4.17. 接收上游的包体</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id14">4.18. 接受上游网络速度相关指令</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id15">4.19. 包体持久化</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id16">4.20. 加工响应头部</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id17">4.21. 上游返回错误的处理办法</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ssl">4.22. ssl使用场景和双向认证</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id18">4.23. 浏览器缓存与nginx缓存</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#etag">4.24. etag</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#if-none-match">4.25. if-none-match</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#if-modified-since">4.26. if-modified-since头部</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id19">4.27. nginx判定缓存是否过期</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#not-modified">4.28. not_modified</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id20">4.29. nginx缓存：定义存放的载体</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#key">4.30. 定义缓存的key</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id21">4.31. 缓存什么请求</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id22">4.32. 不缓存什么内存</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#upstrream-cache-status">4.33. upstrream_cache_status变量</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id23">4.34. 缓存流程 发起请求部分</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id24">4.35. 缓存流程 接手上游响应</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id25">4.36. 如何减轻上游压力</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id26">4.37. 及时清理缓存</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id27">4.38. 七层反向代理对照表</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#redis">4.39. redis反向代理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nginxwebsocket">4.40. nginx实现websocket代理</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id28">4.41. 使用分片提升效率</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id29">4.42. 缓存优化-文件打开</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#http2">4.43. http2主要特性</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id30">4.44. http2核心概念</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id31">4.45. 协议分层和多路复用</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id32">4.46. http2推送文件</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nginxgrpc">4.47. nginx反向代理grpc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#nginx4">4.48. nginx代理4层样例</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#proxy-protocol">4.49. proxy_protocol 协议</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#udp">4.50. udp反向代理</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="05-nginx%E4%BC%98%E5%8C%96.html">5. nginx优化</a></li>
+<li class="toctree-l1"><a class="reference internal" href="06-OpenRestyNginx%E5%92%8Cnginx%E6%BA%90%E7%A0%81.html">6. openresty及nginx源码</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">My_Study_Nginx</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><span class="section-number">4. </span>负载均衡</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/nginx/04-负载均衡.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1><span class="section-number">4. </span>负载均衡<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
+<section id="nginx">
+<h2><span class="section-number">4.1. </span>nginx扩展方式<a class="headerlink" href="#nginx" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>基于url对功能进行分发</p></li>
+<li><p>基于rr算法进行水平扩展</p></li>
+<li><p>基于ip地址映射到特定ip或者集群</p></li>
+</ul>
+</section>
+<section id="id2">
+<h2><span class="section-number">4.2. </span>支持的反向代理协议<a class="headerlink" href="#id2" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>udp</p></li>
+<li><p>tcp</p></li>
+<li><p>memcached</p></li>
+<li><p>scgi</p></li>
+<li><p>uwsgi</p></li>
+<li><p>grpc</p></li>
+<li><p>http</p></li>
+<li><p>websocket</p></li>
+</ul>
+</section>
+<section id="id3">
+<h2><span class="section-number">4.3. </span>负载均衡基础指令<a class="headerlink" href="#id3" title="Permalink to this headline"></a></h2>
+<p>指定上游服务地址， 通过upstream指令指定， 内部通过server指令指定server。
+server指定的地址， 可以是域名、ip、或者socket地址。不加端口默认是80端口。</p>
+<p>官方文档: <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream">https://nginx.org/en/docs/http/ngx_http_upstream_module.html#upstream</a></p>
+<p>server片段重要参数说明</p>
+<ul class="simple">
+<li><p>weight: 权重，默认是1</p></li>
+<li><p>max_conns: 最大活动连接数量，默认是0，也就是不限制。</p></li>
+<li><p>max_fails: 最大失败次数，也就是在fail_timeout这个时间内，如果出现max_fails次数的话，对应的server就不会再次被选择。</p></li>
+<li><p>fail_timeout: 默认是10s</p></li>
+<li><p>backup: 备用， 如果所有的主都不可用才使用这个的。</p></li>
+<li><p>down: 表示这个机器永远不要调度。</p></li>
+<li><p>resolve: 解析域名到地址的。必须使用共享内存的。1.5.12之后才支持动态感知域名变化的。</p></li>
+</ul>
+</section>
+<section id="id4">
+<h2><span class="section-number">4.4. </span>对上游服务使用长连接<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h2>
+<p>降低ningx与上游服务器的建立关闭连接的消耗，提升吞吐量的同事降低延迟。</p>
+<p>http1.1才支持， 需要加入如下设置。</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>proxy_http_version <span class="m">1</span>.1<span class="p">;</span>
+proxy_set_header Connection <span class="s2">&quot;&quot;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>主要参数说明</p>
+<ul class="simple">
+<li><p>keepalive : 指定次数。</p></li>
+<li><p>keepalive_requests: 一个连接最多使用的req</p></li>
+<li><p>keepalive_timeout: 一个连接最多使用的时间</p></li>
+</ul>
+</section>
+<section id="id5">
+<h2><span class="section-number">4.5. </span>轮训配置样例<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h2>
+<p>这里我先使用一个nginx启动了server， 测试如下</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl 127.0.0.1:8001</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl 127.0.0.1:8002</span>
+<span class="m">8002</span> s2
+</pre></div>
+</div>
+<p>配置样例</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>upstream rrups {
+	server 127.0.0.1:8001 weight=2 max_conns=2 max_fails=2 fail_timeout=5;
+	server 127.0.0.1:8002;
+	keepalive 20;
+}
+
+server {
+	listen 8084;
+	server_name n-rrups.linuxpanda.tech;
+	error_log myerror.log info;
+
+	location /{
+		proxy_pass http://rrups;
+		proxy_http_version 1.1;
+        	proxy_set_header Connection &quot;&quot;;
+	}
+}
+</pre></div>
+</div>
+<p>测试结果</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-rrups.linuxpanda.tech</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-rrups.linuxpanda.tech</span>
+<span class="m">8002</span> s2
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-rrups.linuxpanda.tech</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-rrups.linuxpanda.tech</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-rrups.linuxpanda.tech</span>
+<span class="m">8002</span> s2
+</pre></div>
+</div>
+<p>启用了keepalive 我们看下tcpdump 抓包的结果</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 ~<span class="o">]</span><span class="c1"># tcpdump -i lo port 8001 -n</span>
+tcpdump: verbose output suppressed, use -v or -vv <span class="k">for</span> full protocol decode
+listening on lo, link-type EN10MB <span class="o">(</span>Ethernet<span class="o">)</span>, capture size <span class="m">262144</span> bytes
+
+<span class="m">16</span>:20:09.756199 IP <span class="m">127</span>.0.0.1.42492 &gt; <span class="m">127</span>.0.0.1.vcom-tunnel: Flags <span class="o">[</span>S<span class="o">]</span>, seq <span class="m">1693123386</span>, win <span class="m">43690</span>, options <span class="o">[</span>mss <span class="m">65495</span>,sackOK,TS val <span class="m">299254666</span> ecr <span class="m">0</span>,nop,wscale <span class="m">7</span><span class="o">]</span>, length <span class="m">0</span>
+le <span class="m">7</span><span class="o">]</span>, length <span class="m">0</span>
+<span class="m">16</span>:20:09.756220 IP <span class="m">127</span>.0.0.1.42492 &gt; <span class="m">127</span>.0.0.1.vcom-tunnel: Flags <span class="o">[</span>.<span class="o">]</span>, ack <span class="m">1</span>, win <span class="m">342</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299254666</span> ecr <span class="m">299254666</span><span class="o">]</span>, length <span class="m">0</span>
+<span class="m">16</span>:20:09.756262 IP <span class="m">127</span>.0.0.1.42492 &gt; <span class="m">127</span>.0.0.1.vcom-tunnel: Flags <span class="o">[</span>P.<span class="o">]</span>, seq <span class="m">1</span>:70, ack <span class="m">1</span>, win <span class="m">342</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299254666</span> ecr <span class="m">299254666</span><span class="o">]</span>, length <span class="m">69</span>
+<span class="m">16</span>:20:09.756266 IP <span class="m">127</span>.0.0.1.vcom-tunnel &gt; <span class="m">127</span>.0.0.1.42492: Flags <span class="o">[</span>.<span class="o">]</span>, ack <span class="m">70</span>, win <span class="m">342</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299254666</span> ecr <span class="m">299254666</span><span class="o">]</span>, length <span class="m">0</span>
+<span class="m">16</span>:20:09.756357 IP <span class="m">127</span>.0.0.1.vcom-tunnel &gt; <span class="m">127</span>.0.0.1.42492: Flags <span class="o">[</span>P.<span class="o">]</span>, seq <span class="m">1</span>:171, ack <span class="m">70</span>, win <span class="m">342</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299254666</span> ecr <span class="m">299254666</span><span class="o">]</span>, length <span class="m">170</span>
+<span class="m">16</span>:20:09.756361 IP <span class="m">127</span>.0.0.1.42492 &gt; <span class="m">127</span>.0.0.1.vcom-tunnel: Flags <span class="o">[</span>.<span class="o">]</span>, ack <span class="m">171</span>, win <span class="m">350</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299254666</span> ecr <span class="m">299254666</span><span class="o">]</span>, length <span class="m">0</span>
+-----下面是第二次的。
+<span class="m">16</span>:20:35.599901 IP <span class="m">127</span>.0.0.1.42492 &gt; <span class="m">127</span>.0.0.1.vcom-tunnel: Flags <span class="o">[</span>P.<span class="o">]</span>, seq <span class="m">70</span>:139, ack <span class="m">171</span>, win <span class="m">350</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299280510</span> ecr <span class="m">299254666</span><span class="o">]</span>, length <span class="m">69</span>
+<span class="m">16</span>:20:35.600018 IP <span class="m">127</span>.0.0.1.vcom-tunnel &gt; <span class="m">127</span>.0.0.1.42492: Flags <span class="o">[</span>P.<span class="o">]</span>, seq <span class="m">171</span>:341, ack <span class="m">139</span>, win <span class="m">342</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299280510</span> ecr <span class="m">299280510</span><span class="o">]</span>, length <span class="m">170</span>
+<span class="m">16</span>:20:35.600028 IP <span class="m">127</span>.0.0.1.42492 &gt; <span class="m">127</span>.0.0.1.vcom-tunnel: Flags <span class="o">[</span>.<span class="o">]</span>, ack <span class="m">341</span>, win <span class="m">359</span>, options <span class="o">[</span>nop,nop,TS val <span class="m">299280510</span> ecr <span class="m">299280510</span><span class="o">]</span>, length <span class="m">0</span>
+</pre></div>
+</div>
+<p>可以看到第一次是三次握手了， 但是是没有F的falgs的，也就是关闭连接的， 接下里curl的直接传输了。</p>
+</section>
+<section id="hash">
+<h2><span class="section-number">4.6. </span>反向代理的hash算法<a class="headerlink" href="#hash" title="Permalink to this headline"></a></h2>
+<p>对于ipv4地址使用前面3个字节作为关键字，对ipv6使用完整的地址。通过ip_hash 进行配置。</p>
+<p>当然也可以通过hash key 方式配置非ip方式的。</p>
+<p>官方文档： <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_upstream_module.html#ip_hash">https://nginx.org/en/docs/http/ngx_http_upstream_module.html#ip_hash</a></p>
+<p>配置ip_hash</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>upstream rrups {
+	#ip_hash;
+	hash user_$arg_username;
+	server 127.0.0.1:8001 weight=2 max_conns=200 max_fails=2 fail_timeout=5;
+	server 127.0.0.1:8002;
+}
+
+server {
+	listen 8084;
+	server_name n-hash.linuxpanda.tech;
+	error_log myerror.log info;
+
+	location /{
+			set_real_ip_from  10.157.0.0/16;
+			set_real_ip_from  10.21.0.0/16;
+			real_ip_recursive on;
+			real_ip_header    X-Forwarded-For;
+
+			proxy_pass http://rrups;
+			proxy_http_version 1.1;
+        		proxy_set_header Connection &quot;&quot;;
+	}
+}
+</pre></div>
+</div>
+<p>验证1 ip_hash</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-hash.linuxpanda.tech:8084 -H &quot;X-Forwarded-For: 1.1.1.1&quot;</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-hash.linuxpanda.tech:8084 -H &quot;X-Forwarded-For: 1.1.1.1&quot;</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-hash.linuxpanda.tech:8084 -H &quot;X-Forwarded-For: 1.1.1.1&quot;</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-hash.linuxpanda.tech:8084 -H &quot;X-Forwarded-For: 1.1.1.1&quot;</span>
+<span class="m">8001</span> s1
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-hash.linuxpanda.tech:8084 -H &quot;X-Forwarded-For: 1.1.1.1&quot;</span>
+<span class="m">8001</span> s1
+</pre></div>
+</div>
+<p>验证1 hash key</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>zhaojiedi_dxm@instance-pu4usb9a ~<span class="o">]</span>$ curl http://n-hash.linuxpanda.tech:8084?username<span class="o">=</span>abc
+<span class="m">8001</span> s1
+<span class="o">[</span>zhaojiedi_dxm@instance-pu4usb9a ~<span class="o">]</span>$ curl http://n-hash.linuxpanda.tech:8084?username<span class="o">=</span>abc
+<span class="m">8001</span> s1
+<span class="o">[</span>zhaojiedi_dxm@instance-pu4usb9a ~<span class="o">]</span>$ curl http://n-hash.linuxpanda.tech:8084?username<span class="o">=</span>abc
+<span class="m">8001</span> s1
+<span class="o">[</span>zhaojiedi_dxm@instance-pu4usb9a ~<span class="o">]</span>$ curl http://n-hash.linuxpanda.tech:8084?username<span class="o">=</span>deaaa
+<span class="m">8002</span> s2
+<span class="o">[</span>zhaojiedi_dxm@instance-pu4usb9a ~<span class="o">]</span>$ curl http://n-hash.linuxpanda.tech:8084?username<span class="o">=</span>deaaa
+<span class="m">8002</span> s2
+<span class="o">[</span>zhaojiedi_dxm@instance-pu4usb9a ~<span class="o">]</span>$ curl http://n-hash.linuxpanda.tech:8084?username<span class="o">=</span>deaaa
+<span class="m">8002</span> s2
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h2><span class="section-number">4.7. </span>一致性hash算法<a class="headerlink" href="#id6" title="Permalink to this headline"></a></h2>
+<p>通过hash key consistent 即可。</p>
+</section>
+<section id="id7">
+<h2><span class="section-number">4.8. </span>连接做少的上游服务器<a class="headerlink" href="#id7" title="Permalink to this headline"></a></h2>
+</section>
+<section id="upsteam">
+<h2><span class="section-number">4.9. </span>upsteam共享内存<a class="headerlink" href="#upsteam" title="Permalink to this headline"></a></h2>
+<p>使用共享内存可以将upstream定义的策略数据，状态数据放到共享内存中，对所有worker进程生效。</p>
+</section>
+<section id="id8">
+<h2><span class="section-number">4.10. </span>upsteam模块提供的变量<a class="headerlink" href="#id8" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>upstream_addr: 地址</p></li>
+<li><p>upstream_connect_time: 建立了解消耗时间</p></li>
+<li><p>upstream_header_time: 接收上游的头部需要的时间</p></li>
+<li><p>upstream_response_time: 完整耗时</p></li>
+<li><p>upstream_bytes_received: 响应长度</p></li>
+<li><p>upstream_response_length: 包体长度</p></li>
+<li><p>upstream_status: 上游的状态吗， 如果没有连接上，502</p></li>
+<li><p>upstream_cookie_名称: 上游返回的set_cookie取出的值。</p></li>
+</ul>
+</section>
+<section id="http">
+<h2><span class="section-number">4.11. </span>http反向代理的处理流程<a class="headerlink" href="#http" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx25.png" src="../_images/nginx25.png" />
+</section>
+<section id="proxy">
+<h2><span class="section-number">4.12. </span>proxy模块的基本使用<a class="headerlink" href="#proxy" title="Permalink to this headline"></a></h2>
+<p>这个模块是支持http和https协议2种类型的代理的，
+proxy 后面的url必须以http或者https开头， 接下来是域名、ip 、socket或者upstream名字。前面2个是可以添加端口的。</p>
+<p>如果url参数带不带uri差异是比较大的。</p>
+<ul class="simple">
+<li><p>不携带uri: 直接转发给上游</p></li>
+<li><p>携带uri: 将location匹配的部分进行替换。</p></li>
+</ul>
+<p>提前准备一个后端</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>server <span class="o">{</span>
+        listen <span class="m">8001</span> <span class="p">;</span>
+        location / <span class="o">{</span>
+                <span class="k">return</span> <span class="m">200</span> <span class="s1">&#39;8001 s1\r\n uri=$uri \r\n&#39;</span><span class="p">;</span>
+        <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>upstream r1 {
+	server 127.0.0.1:8001;
+}
+
+server {
+	listen 8084;
+	server_name n-proxy.linuxpanda.tech;
+	error_log myerror.log info;
+
+	location /a/b/c {
+		#proxy_pass http://r1;
+		proxy_pass http://r1/panda;
+		proxy_http_version 1.1;
+        	proxy_set_header Connection &quot;&quot;;
+	}
+}
+</pre></div>
+</div>
+<p>验证一下</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 不带uri方式的。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-proxy.linuxpanda.tech:8084/a/b/c/d/e/f</span>
+<span class="m">8001</span> s1
+<span class="nv">uri</span><span class="o">=</span>/a/b/c/d/e/f
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-proxy.linuxpanda.tech:8084/a/b/c/def</span>
+<span class="m">8001</span> s1
+<span class="nv">uri</span><span class="o">=</span>/a/b/c/def
+
+<span class="c1"># 带uri方式的。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-proxy.linuxpanda.tech:8084/a/b/c/def</span>
+<span class="m">8001</span> s1
+<span class="nv">uri</span><span class="o">=</span>/panda/def
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-proxy.linuxpanda.tech:8084/a/b/c/d/e/f</span>
+<span class="m">8001</span> s1
+<span class="nv">uri</span><span class="o">=</span>/panda/d/e/f
+</pre></div>
+</div>
+</section>
+<section id="id9">
+<h2><span class="section-number">4.13. </span>修改向后端的请求行<a class="headerlink" href="#id9" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_method: 修改请求方法</p></li>
+<li><p>proxy_http_version: 修改协议版本。</p></li>
+<li><p>proxy_set_header field value: 修改请求头部。</p></li>
+<li><p>proxy_pass_request_header： 用户的header是否发送。</p></li>
+<li><p>proxy_pass_request_body: body是否发送</p></li>
+<li><p>proxy_set_body: 自定义body方式。</p></li>
+</ul>
+</section>
+<section id="id10">
+<h2><span class="section-number">4.14. </span>接收客户端请求的包体<a class="headerlink" href="#id10" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_request_buffering 控制收完在转发还是边收边转发。</p></li>
+<li><p>client_max_body_size: 仅仅对头部含有Content-Length有效超过最大长度后，返回413错误。</p></li>
+<li><p>client_body_temp_path: 临时文件存放目录，这个是存储body信息的。</p></li>
+<li><p>client_body_in_file_only : 请求的包体是否保留的文件中，on必须写的， clean: 处理完毕后删除， off: 非常小，buffer_size 如果够的话，就不写了。</p></li>
+<li><p>client_body_timeout : 两次读取body的最大时延，返回418错误。</p></li>
+</ul>
+</section>
+<section id="id11">
+<h2><span class="section-number">4.15. </span>向上游建立连接<a class="headerlink" href="#id11" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_connect_timeout 建立连接，如果超时，502</p></li>
+<li><p>proxy_next_upstream : 特定错误后，可以换一个机器进行调度响应。</p></li>
+<li><p>proxy_socket_keepalive: 保持连接。</p></li>
+<li><p>keepalive: 控制数量</p></li>
+<li><p>keepalive_requests: 控制连接复用次数</p></li>
+<li><p>proxy_bind: 修改源地址。如果非本机地址，需要transparent的参数辅助的。</p></li>
+<li><p>proxy_ignore_client_abort: 客户端和nginx如果取消了， nginx和后端的连接是否断开。</p></li>
+<li><p>proxy_send_timeout : 发送请求的超时时间。</p></li>
+</ul>
+</section>
+<section id="id12">
+<h2><span class="section-number">4.16. </span>接收上游的响应头部<a class="headerlink" href="#id12" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_buffer_size 是用来存放对应响应头部的，如果比较大，errlog会出现upstream send too big header。</p></li>
+<li><p>proxy_buffering ： 接收完整的响应包体，这个基本同proxy_request_buffering.</p></li>
+</ul>
+</section>
+<section id="id13">
+<h2><span class="section-number">4.17. </span>接收上游的包体<a class="headerlink" href="#id13" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_buffers 这个用于存放上游的http包体大小，8 8k参数是如果8k足够就只分配1个8k的， 不够继续分配，最多8个8k。</p></li>
+<li><p>proxy_buffering: 禁用的话，会收到上游响应后立刻同步给客户端响应。如果开启，放到内存，内存放不下，写临时文件。</p></li>
+<li><p>proxy_max_temp_file_size: 写入磁盘的文件的最大值。</p></li>
+<li><p>proxy_temp_file_write_size: 每次写入字节限制。</p></li>
+<li><p>proxy_temp_path: 指定临时文件目录和存储级别。</p></li>
+<li><p>proxy_busy_buffers_size: 及时转发包体</p></li>
+</ul>
+</section>
+<section id="id14">
+<h2><span class="section-number">4.18. </span>接受上游网络速度相关指令<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_read_timeout: 2次读取超时时间。</p></li>
+<li><p>proxy_limit_rate: 读取上游的速率。</p></li>
+</ul>
+</section>
+<section id="id15">
+<h2><span class="section-number">4.19. </span>包体持久化<a class="headerlink" href="#id15" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_store_access: 定义临时文件持久化， 权限设置。</p></li>
+<li><p>proxy_store: 可以使用变量控制存放位置。</p></li>
+</ul>
+</section>
+<section id="id16">
+<h2><span class="section-number">4.20. </span>加工响应头部<a class="headerlink" href="#id16" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_ignore_header: 禁用特定字段。</p></li>
+<li><p>proxy_hide_header: 不转发某些头部。</p></li>
+<li><p>porxy_pass_header： 允许哪些头部发送。</p></li>
+<li><p>proxy_cookie_domain: 修改域名</p></li>
+<li><p>proxy_cookie_path: 修改path</p></li>
+<li><p>proxy_redirect: 重定向url</p></li>
+</ul>
+</section>
+<section id="id17">
+<h2><span class="section-number">4.21. </span>上游返回错误的处理办法<a class="headerlink" href="#id17" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_next_upstream: 在没有想客户端发送任何内容的时候，就错误的才重新选择新的机器。</p></li>
+<li><p>proxy_next_upstream_timeout: 重试的时间</p></li>
+<li><p>proxy_next_upstream_tries: 重试的次数。</p></li>
+<li><p>proxy_intercept_erros: 是否拦截上游失败响应，如果上游响应&gt;=300的视乎，启用这个选项的话， error_page就会生效了。</p></li>
+</ul>
+<p>准备工作</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># cat /root/nginx/conf/sites/s1.conf</span>
+server <span class="o">{</span>
+    listen <span class="m">8001</span> <span class="p">;</span>
+    location / <span class="o">{</span>
+        <span class="k">return</span> <span class="m">200</span> <span class="s1">&#39;8001 s1\r\n uri=$uri \r\n&#39;</span><span class="p">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># cat /root/nginx/conf/sites/s2.conf</span>
+server <span class="o">{</span>
+    listen <span class="m">8002</span><span class="p">;</span>
+    location / <span class="o">{</span>
+        <span class="k">return</span> <span class="m">200</span> <span class="s1">&#39;8002 s2 \r\n&#39;</span><span class="p">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># cat /root/nginx/conf/sites/s3.conf</span>
+server <span class="o">{</span>
+    listen <span class="m">8003</span><span class="p">;</span>
+    location / <span class="o">{</span>
+        <span class="k">return</span> <span class="m">502</span> <span class="p">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>openrestry配置如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>upstream ups {
+	server 127.0.0.1:8001;
+	server 127.0.0.1:8002;
+	server 127.0.0.1:8003;
+}
+log_format ups &#39;porxy_host=&quot;$proxy_host&quot; proxy_port=&quot;$proxy_port&quot; upstream_addr=&quot;$upstream_addr&quot; upstream_status=&quot;$upstream_status&quot;&#39;;
+
+server {
+	listen 8084;
+	server_name n-proxyc.linuxpanda.tech;
+	error_log myerror.log info;
+
+	root html;
+	error_page 502 500 /a.txt;
+	access_log logs/access.log ups ;
+
+	location / {
+		
+		proxy_pass http://ups;
+		proxy_next_upstream error timeout http_502; 
+	}
+}
+</pre></div>
+</div>
+<p>验证效果</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-proxyc.linuxpanda.tech:8084/</span>
+<span class="m">8001</span> s1
+<span class="nv">uri</span><span class="o">=</span>/
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-proxyc.linuxpanda.tech:8084/</span>
+<span class="m">8002</span> s2
+<span class="c1"># 803是返回502的， 但是我们配置了next的，会调度到别的实例然后拿到结果。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-proxyc.linuxpanda.tech:8084/</span>
+<span class="m">8001</span> s1
+<span class="nv">uri</span><span class="o">=</span>/
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># tail -n 10 logs/access.log</span>
+<span class="nv">porxy_host</span><span class="o">=</span><span class="s2">&quot;ups&quot;</span> <span class="nv">proxy_port</span><span class="o">=</span><span class="s2">&quot;80&quot;</span> <span class="nv">upstream_addr</span><span class="o">=</span><span class="s2">&quot;127.0.0.1:8001&quot;</span> <span class="nv">upstream_status</span><span class="o">=</span><span class="s2">&quot;200&quot;</span>
+<span class="nv">porxy_host</span><span class="o">=</span><span class="s2">&quot;ups&quot;</span> <span class="nv">proxy_port</span><span class="o">=</span><span class="s2">&quot;80&quot;</span> <span class="nv">upstream_addr</span><span class="o">=</span><span class="s2">&quot;127.0.0.1:8002&quot;</span> <span class="nv">upstream_status</span><span class="o">=</span><span class="s2">&quot;200&quot;</span>
+<span class="nv">porxy_host</span><span class="o">=</span><span class="s2">&quot;ups&quot;</span> <span class="nv">proxy_port</span><span class="o">=</span><span class="s2">&quot;80&quot;</span> <span class="nv">upstream_addr</span><span class="o">=</span><span class="s2">&quot;127.0.0.1:8003, 127.0.0.1:8001&quot;</span> <span class="nv">upstream_status</span><span class="o">=</span><span class="s2">&quot;502, 200&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="ssl">
+<h2><span class="section-number">4.22. </span>ssl使用场景和双向认证<a class="headerlink" href="#ssl" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx26.png" src="../_images/nginx26.png" />
+<p>官方文档： <a class="reference external" href="https://nginx.org/en/docs/http/ngx_http_ssl_module.html#directives">https://nginx.org/en/docs/http/ngx_http_ssl_module.html#directives</a></p>
+<p>几个主要连接相关变量</p>
+<ul class="simple">
+<li><p>ssl_client_serial: 连接上的客户端序列号。</p></li>
+<li><p>ssl_early_data: 在tls3使用early data 且握手为完成返回1 ，否则返回空。</p></li>
+<li><p>ssl_client_verify: 验证失败返回failed:原因，成功返回Success.</p></li>
+<li><p>ssl_session_reused: 如果session复用，返回r,否则为. 。</p></li>
+</ul>
+<p>准备相关证书</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 这里不多弄具体证书创建问题， 需要几个文件，</span>
+ca的pem文件
+n-ssl1.linuxpanda.tech.key n-ssl1.linuxpanda.tech.crt
+n-ssl2.linuxpanda.tech.key n-ssl2.linuxpanda.tech.crt
+
+<span class="c1"># 具体操作可以参考： https://www.linuxpanda.tech/en/latest/%E6%9D%82%E9%A1%B9/CA%E7%9A%84%E6%90%AD%E5%BB%BA.html</span>
+<span class="c1"># 或者： https://www.cnblogs.com/zhaojiedi1992/p/zhaojiedi_linux_011_ca.html</span>
+</pre></div>
+</div>
+<p>nginx配置</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8011 ssl;
+	server_name n-ssl1.linuxpanda.tech;
+	
+	ssl_certificate     ssl/n-ssl1.linuxpanda.tech.crt;
+        ssl_certificate_key ssl/n-ssl1.linuxpanda.tech.key;
+
+	ssl_verify_client on;
+	ssl_client_certificate ssl/cacert.pem;
+
+	location / {
+		return 200 &#39;ssl_early_data=$ssl_early_data ; ssl_client_verify=$ssl_client_verify; \r\n&#39;;
+	}
+}
+</pre></div>
+</div>
+<p>openrestry配置</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8011 ssl;
+	server_name n-ssl1.linuxpanda.tech;
+	
+	ssl_certificate     ssl/n-ssl1.linuxpanda.tech.crt;
+        ssl_certificate_key ssl/n-ssl1.linuxpanda.tech.key;
+
+	ssl_verify_client on;
+	ssl_client_certificate ssl/cacert.pem;
+
+	location / {
+		return 200 &#39;ssl_early_data=$ssl_early_data ; ssl_client_verify=$ssl_client_verify; \r\n&#39;;
+	}
+}
+</pre></div>
+</div>
+<p>验证测试</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># curl http://n-ssl2.linuxpanda.tech:8012/</span>
+<span class="nv">ssl_early_data</span><span class="o">=</span> <span class="p">;</span> <span class="nv">ssl_client_verify</span><span class="o">=</span>SUCCESS<span class="p">;</span>
+</pre></div>
+</div>
+</section>
+<section id="id18">
+<h2><span class="section-number">4.23. </span>浏览器缓存与nginx缓存<a class="headerlink" href="#id18" title="Permalink to this headline"></a></h2>
+<dl class="simple">
+<dt>浏览器缓存</dt><dd><p>优点： 没有网络消耗，速度最快，即使有网络消耗也比较小。
+缺点： 仅仅提升一个用户体验。</p>
+</dd>
+<dt>nginx缓存：</dt><dd><p>优点： 提升所有用户体验，有效降低后端负载，通过304减少与上游的流量消耗。
+缺点： 用户仍然保持网络消耗</p>
+</dd>
+</dl>
+<p>建议同时使用浏览器缓存和nginx缓存。</p>
+<a class="reference internal image-reference" href="../_images/nginx28.png"><img alt="../_images/nginx28.png" src="../_images/nginx28.png" style="width: 1146.0px; height: 594.0px;" /></a>
+</section>
+<section id="etag">
+<h2><span class="section-number">4.24. </span>etag<a class="headerlink" href="#etag" title="Permalink to this headline"></a></h2>
+<p>根据文件的修改时间和大小生成。</p>
+</section>
+<section id="if-none-match">
+<h2><span class="section-number">4.25. </span>if-none-match<a class="headerlink" href="#if-none-match" title="Permalink to this headline"></a></h2>
+<p>它的原理是这样的，当浏览器请求服务器的某项资源(A)时, 服务器根据A算出一个哈希值(3f80f-1b6-3e1cb03b)并通过 ETag 返回给浏览器，
+浏览器把”3f80f-1b6-3e1cb03b” 和 A 同时缓存在本地，当下次再次向服务器请求A时，会通过类似 If-None-Match: “3f80f-1b6-3e1cb03b”
+的请求头把ETag发送给服务器，服务器再次计算A的哈希值并和浏览器返回的值做比较，如果发现A发生了变化就把A返回给浏览器(200)，如果发现A没有变化就给浏览器返回一个304未修改。
+这样通过控制浏览器端的缓存，可以节省服务器的带宽，因为服务器不需要每次都把全量数据返回给客户端。</p>
+<p>具体参考： <a class="reference external" href="https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/If-None-Match">https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Headers/If-None-Match</a></p>
+</section>
+<section id="if-modified-since">
+<h2><span class="section-number">4.26. </span>if-modified-since头部<a class="headerlink" href="#if-modified-since" title="Permalink to this headline"></a></h2>
+<p>如果没有超过日期，就返回304，超过就返回200，具体内容就返回。</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>如何和if-None-Match一同使用的时候，这个since是不生效的，除非服务器不支持Match的。</p>
+</div>
+</section>
+<section id="id19">
+<h2><span class="section-number">4.27. </span>nginx判定缓存是否过期<a class="headerlink" href="#id19" title="Permalink to this headline"></a></h2>
+<p>expire指令：</p>
+<ul class="simple">
+<li><p>max: 最大的值。cache-control基本10年。</p></li>
+<li><p>off,不添加或者修改过期和cache-control字段。</p></li>
+<li><p>epoch 不设置缓存</p></li>
+<li><p>time 设置具体时间， &#64;18h30m</p></li>
+</ul>
+<p>准备几个文件</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 html<span class="o">]</span><span class="c1"># for i in $(seq 1 7) ; do mkdir dir$i;  echo &quot;this is dir$i&quot; &gt;&gt; dir$i/index.html; done</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 html<span class="o">]</span><span class="c1"># tree</span>
+.
+├── 50x.html
+├── dir1
+│   └── index.html
+├── dir2
+│   └── index.html
+├── dir3
+│   └── index.html
+├── dir4
+│   └── index.html
+├── dir5
+│   └── index.html
+├── dir6
+│   └── index.html
+├── dir7
+│   └── index.html
+└── index.html
+</pre></div>
+</div>
+<p>nginx配置样例</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8084;
+	server_name n-cache.linuxpanda.tech;
+	error_log myerror.log info;
+
+	root html;
+
+	location /dir1 {
+		expires max ;	
+	}
+	location /dir2 {
+		expires @15h30m;
+	}
+
+	location /dir3 {
+		expires modified +24h;
+	}
+	location /dir4 {
+		expires 0;
+	}
+	location /dir5 {
+		expires -1;
+	}
+	location /dir6 {
+		expires	 epoch;
+	}
+}
+</pre></div>
+</div>
+<p>这里对集中情况进行验证</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 案例1，max， 可以看到结果max-age是10年的</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-cache.linuxpanda.tech:8084/dir1/index.html -IL</span>
+HTTP/1.1 <span class="m">200</span> OK
+Server: openresty/1.19.9.1 <span class="o">(</span>no pool<span class="o">)</span>
+Date: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:49:14 GMT
+Content-Type: text/html
+Content-Length: <span class="m">13</span>
+Last-Modified: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:45:37 GMT
+Connection: keep-alive
+ETag: <span class="s2">&quot;61dcfd61-d&quot;</span>
+Expires: Thu, <span class="m">31</span> Dec <span class="m">2037</span> <span class="m">23</span>:55:55 GMT
+Cache-Control: max-age<span class="o">=</span><span class="m">315360000</span>
+Accept-Ranges: bytes
+
+<span class="c1">#案例2 我当前是11:50的，我设置15h30m 具体这个时间大概220分钟=（3小时 40分钟）</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-cache.linuxpanda.tech:8084/dir2/index.html -IL</span>
+HTTP/1.1 <span class="m">200</span> OK
+Server: openresty/1.19.9.1 <span class="o">(</span>no pool<span class="o">)</span>
+Date: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:50:00 GMT
+Content-Type: text/html
+Content-Length: <span class="m">13</span>
+Last-Modified: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:45:37 GMT
+Connection: keep-alive
+ETag: <span class="s2">&quot;61dcfd61-d&quot;</span>
+Expires: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">07</span>:30:00 GMT
+Cache-Control: max-age<span class="o">=</span><span class="m">13200</span>
+Accept-Ranges: bytes
+
+<span class="c1">#案例3 根据modify修改时间，加一个时间。</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-cache.linuxpanda.tech:8084/dir3/index.html -IL</span>
+HTTP/1.1 <span class="m">200</span> OK
+Server: openresty/1.19.9.1 <span class="o">(</span>no pool<span class="o">)</span>
+Date: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:52:56 GMT
+Content-Type: text/html
+Content-Length: <span class="m">13</span>
+Last-Modified: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:45:37 GMT
+Connection: keep-alive
+ETag: <span class="s2">&quot;61dcfd61-d&quot;</span>
+Expires: Wed, <span class="m">12</span> Jan <span class="m">2022</span> <span class="m">03</span>:45:37 GMT
+Cache-Control: max-age<span class="o">=</span><span class="m">85961</span>
+Accept-Ranges: bytes
+
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># ll ../html/dir3/index.html</span>
+-rw-r--r-- <span class="m">1</span> root root <span class="m">13</span> Jan <span class="m">11</span> <span class="m">11</span>:45 ../html/dir3/index.html
+
+<span class="c1"># 案例4 max-age=0</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-cache.linuxpanda.tech:8084/dir4/index.html -IL</span>
+HTTP/1.1 <span class="m">200</span> OK
+Server: openresty/1.19.9.1 <span class="o">(</span>no pool<span class="o">)</span>
+Date: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:53:43 GMT
+Content-Type: text/html
+Content-Length: <span class="m">13</span>
+Last-Modified: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:45:37 GMT
+Connection: keep-alive
+ETag: <span class="s2">&quot;61dcfd61-d&quot;</span>
+Expires: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:53:43 GMT
+Cache-Control: max-age<span class="o">=</span><span class="m">0</span>
+Accept-Ranges: bytes
+<span class="c1"># 案例5 设置负数表示no-cache</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-cache.linuxpanda.tech:8084/dir5/index.html -IL</span>
+HTTP/1.1 <span class="m">200</span> OK
+Server: openresty/1.19.9.1 <span class="o">(</span>no pool<span class="o">)</span>
+Date: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:54:39 GMT
+Content-Type: text/html
+Content-Length: <span class="m">13</span>
+Last-Modified: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:45:37 GMT
+Connection: keep-alive
+ETag: <span class="s2">&quot;61dcfd61-d&quot;</span>
+Expires: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:54:38 GMT
+Cache-Control: no-cache
+Accept-Ranges: bytes
+<span class="c1"># 案例6</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-cache.linuxpanda.tech:8084/dir6/index.html -IL</span>
+HTTP/1.1 <span class="m">200</span> OK
+Server: openresty/1.19.9.1 <span class="o">(</span>no pool<span class="o">)</span>
+Date: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:55:34 GMT
+Content-Type: text/html
+Content-Length: <span class="m">13</span>
+Last-Modified: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">03</span>:45:37 GMT
+Connection: keep-alive
+ETag: <span class="s2">&quot;61dcfd61-d&quot;</span>
+Expires: Thu, <span class="m">01</span> Jan <span class="m">1970</span> <span class="m">00</span>:00:01 GMT
+Cache-Control: no-cache
+Accept-Ranges: bytes
+</pre></div>
+</div>
+</section>
+<section id="not-modified">
+<h2><span class="section-number">4.28. </span>not_modified<a class="headerlink" href="#not-modified" title="Permalink to this headline"></a></h2>
+<p>客户端拥有缓存，但是不确定缓存是否过期，请求闯入if-none-match或者if-modified-since 头部， 该模块通过将改值与响应中的last-modified值进行比较，
+决定是否返回200还是仅仅302 notmodified头部。</p>
+<img alt="../_images/nginx29.png" src="../_images/nginx29.png" />
+</section>
+<section id="id20">
+<h2><span class="section-number">4.29. </span>nginx缓存：定义存放的载体<a class="headerlink" href="#id20" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_cache zone： 定义使用哪个zone</p></li>
+<li><p>proxy_cache_path: 定义zone</p></li>
+</ul>
+<p>proxy_cache_path指令详细参数</p>
+<ul class="simple">
+<li><p>path： 定义目录</p></li>
+<li><p>level: 目录级别</p></li>
+<li><p>use_temp_path: 定义临时目录</p></li>
+<li><p>keys_zone: name定义共享内存名字，size是共享内存大小 1MB大约可以存放8k key</p></li>
+<li><p>inactive: 在特定时间没有被访问就会被淘汰掉， 默认10min</p></li>
+<li><p>max_size: 设置最大的缓存文件大小，超出后按照lru淘汰。</p></li>
+<li><p>manager_files: 淘汰的最大文件数量 默认100</p></li>
+<li><p>manager_sleep: 淘汰一次后的休眠时间</p></li>
+<li><p>manager_threshold: 执行一次的最大耗时，默认50ms</p></li>
+<li><p>loader_files: 载入磁盘文件到共享内存的批处理文件数量，默认100</p></li>
+<li><p>loader_sleep: 执行一次缓存文件到共享内存后，进程的休眠时间。</p></li>
+<li><p>loader_threshold: 每次载入文件的最大耗时，默认50ms</p></li>
+</ul>
+</section>
+<section id="key">
+<h2><span class="section-number">4.30. </span>定义缓存的key<a class="headerlink" href="#key" title="Permalink to this headline"></a></h2>
+<p>proxy_cache_key : 可以使用变量，定义缓存的key</p>
+</section>
+<section id="id21">
+<h2><span class="section-number">4.31. </span>缓存什么请求<a class="headerlink" href="#id21" title="Permalink to this headline"></a></h2>
+<p>proxy_cache_valid:</p>
+</section>
+<section id="id22">
+<h2><span class="section-number">4.32. </span>不缓存什么内存<a class="headerlink" href="#id22" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>proxy_no_cache : 参数为真的时候，响应不存入缓存</p></li>
+<li><p>porxy_cache_bypass: 参数为真，不使用缓存内容。</p></li>
+</ul>
+</section>
+<section id="upstrream-cache-status">
+<h2><span class="section-number">4.33. </span>upstrream_cache_status变量<a class="headerlink" href="#upstrream-cache-status" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>MISS 未命中</p></li>
+<li><p>HIT 命中缓存</p></li>
+<li><p>EXPIRED 缓存已经过期</p></li>
+<li><p>STALE 命中陈旧缓存</p></li>
+<li><p>UPDATING 内容陈旧单正在更新</p></li>
+<li><p>REVALIDATED nginx验证陈旧内容依然有效</p></li>
+<li><p>BYPASS 响应是从原始服务器获得的。</p></li>
+</ul>
+<p>nginx后端配置</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8004;
+	location / {
+	#	add_header Vary * ;
+	#	add_header X-Accel-Expires 3 ;
+		alias html/;
+	}
+}
+</pre></div>
+</div>
+<p>openrestry 配置</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>proxy_cache_path /root/openresty/nginx/cache levels=2:2 keys_zone=two:10m loader_threshold=300 
+                     loader_files=200 max_size=200m inactive=1m;
+
+server {
+	listen 8084;
+	server_name n-cachec.linuxpanda.tech;
+	error_log myerror.log debug;
+
+	root html;
+
+	location / {
+		# 这里为了可以在响应中看到是否命中，添加个header看看
+		proxy_cache two;
+		proxy_cache_valid 200 1m;
+		add_header X-Cache-Status $upstream_cache_status;
+
+		proxy_cache_key $scheme$uri ;
+		proxy_pass http://localhost:8004;
+	}
+}
+</pre></div>
+</div>
+<p>验证结果</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl http://n-cachec.linuxpanda.tech:8084/index.html  -IL
+HTTP/1.1 <span class="m">200</span> OK
+Server: openresty/1.19.9.1 <span class="o">(</span>no pool<span class="o">)</span>
+Date: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">07</span>:43:32 GMT
+Content-Type: text/html
+Content-Length: <span class="m">612</span>
+Connection: keep-alive
+Last-Modified: Mon, <span class="m">29</span> Nov <span class="m">2021</span> <span class="m">07</span>:50:00 GMT
+ETag: <span class="s2">&quot;61a48628-264&quot;</span>
+X-Cache-Status: MISS
+Accept-Ranges: bytes
+
+<span class="o">[</span>root@zhaojiedi-elk-2 conf<span class="o">]</span><span class="c1"># curl http://n-cachec.linuxpanda.tech:8084/index.html  -IL</span>
+HTTP/1.1 <span class="m">200</span> OK
+Server: openresty/1.19.9.1 <span class="o">(</span>no pool<span class="o">)</span>
+Date: Tue, <span class="m">11</span> Jan <span class="m">2022</span> <span class="m">07</span>:43:35 GMT
+Content-Type: text/html
+Content-Length: <span class="m">612</span>
+Connection: keep-alive
+Last-Modified: Mon, <span class="m">29</span> Nov <span class="m">2021</span> <span class="m">07</span>:50:00 GMT
+ETag: <span class="s2">&quot;61a48628-264&quot;</span>
+X-Cache-Status: HIT
+Accept-Ranges: bytes
+
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># !tree</span>
+tree /root/openresty/nginx/cache/
+/root/openresty/nginx/cache/
+└── 0a
+    └── 0d
+        └── 3fc7ad9511bc116105001aa24d260d0a
+
+<span class="m">2</span> directories, <span class="m">1</span> file
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># cat /root/openresty/nginx/cache/0a/0d/3fc7ad9511bc116105001aa24d260d0a</span>
+</pre></div>
+</div>
+</section>
+<section id="id23">
+<h2><span class="section-number">4.34. </span>缓存流程 发起请求部分<a class="headerlink" href="#id23" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx30.png" src="../_images/nginx30.png" />
+</section>
+<section id="id24">
+<h2><span class="section-number">4.35. </span>缓存流程 接手上游响应<a class="headerlink" href="#id24" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx31.png" src="../_images/nginx31.png" />
+</section>
+<section id="id25">
+<h2><span class="section-number">4.36. </span>如何减轻上游压力<a class="headerlink" href="#id25" title="Permalink to this headline"></a></h2>
+<ol class="arabic simple">
+<li><p>合并回源请求 proxy_cache_lock on 同一个时间只能有1个请求。 proxy_cache_lock_timeout: 等待第一个多久， proxy_cache_lock_age: 上一个请求的超时时间。</p></li>
+<li><p>使用久缓存返回 proxy_cache_use_stale updating proxy_cache_backgroupd_update on 。</p></li>
+<li><p>proxy——cache_revalidate on 在请求上游的时候会带header if-modified_since if-none-match等，没有变化就是304减少传输。</p></li>
+</ol>
+</section>
+<section id="id26">
+<h2><span class="section-number">4.37. </span>及时清理缓存<a class="headerlink" href="#id26" title="Permalink to this headline"></a></h2>
+<p>官方的开源是不支持的，plus nginx是支持的， 这里有个模块，可以编译进来。
+<a class="reference external" href="https://github.com/FRiCKLE/ngx_cache_purge">https://github.com/FRiCKLE/ngx_cache_purge</a></p>
+</section>
+<section id="id27">
+<h2><span class="section-number">4.38. </span>七层反向代理对照表<a class="headerlink" href="#id27" title="Permalink to this headline"></a></h2>
+</section>
+<section id="redis">
+<h2><span class="section-number">4.39. </span>redis反向代理<a class="headerlink" href="#redis" title="Permalink to this headline"></a></h2>
+<p>将http请求转换为redis协议中的get请求转发到上游memcached服务中。</p>
+<p>配置如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>upstream redis1 {
+	server 127.0.0.1:6379;
+}
+server {
+	listen 8084;
+	server_name n-redis.linuxpanda.tech;
+	error_log myerror.log info;
+
+	root html;
+ # GET /get?key=some_key
+ location = /get {
+     set_unescape_uri $key $arg_key;  # this requires ngx_set_misc
+     redis2_query get $key;
+     redis2_pass redis1:6379;
+ }
+
+ # GET /set?key=one&amp;val=first%20value
+ location = /set {
+     set_unescape_uri $key $arg_key;  # this requires ngx_set_misc
+     set_unescape_uri $val $arg_val;  # this requires ngx_set_misc
+     redis2_query set $key $val;
+     redis2_pass redis1:6379;
+ }
+}
+</pre></div>
+</div>
+<p>样例验证</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># curl &#39;http://n-redis.linuxpanda.tech:8084/set?key=k1&amp;val=v1&#39;</span>
++OK
+<span class="o">[</span>root@zhaojiedi-elk-2 sites<span class="o">]</span><span class="c1"># curl &#39;http://n-redis.linuxpanda.tech:8084/get?key=k1&#39;</span>
+<span class="nv">$2</span>
+v1
+</pre></div>
+</div>
+</section>
+<section id="nginxwebsocket">
+<h2><span class="section-number">4.40. </span>nginx实现websocket代理<a class="headerlink" href="#nginxwebsocket" title="Permalink to this headline"></a></h2>
+<p>proxy模块提供
+官方参考 <a class="reference external" href="https://nginx.org/en/docs/http/websocket.html">https://nginx.org/en/docs/http/websocket.html</a></p>
+<p>核心配置片段
+.. code-block:: bash</p>
+<blockquote>
+<div><p>proxy_http_version 1.1;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection “upgrade”;</p>
+</div></blockquote>
+<p>配置</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8085;
+	server_name n-websocket.linuxpanda.tech n-ws.linuxpanda.tech;
+	error_log myerror.log info;
+	access_log logs/ws.log ;
+
+	location / {
+		proxy_http_version 1.1;
+    		proxy_set_header Upgrade $http_upgrade;
+    		proxy_set_header Connection &quot;upgrade&quot;;
+		proxy_pass http://121.40.165.18:8800;
+	}
+}
+</pre></div>
+</div>
+<p>验证</p>
+<img alt="../_images/nginx32.png" src="../_images/nginx32.png" />
+<p>如果配置证书的话， 就是wss协议了。 这个样例仅仅支持ws协议。</p>
+</section>
+<section id="id28">
+<h2><span class="section-number">4.41. </span>使用分片提升效率<a class="headerlink" href="#id28" title="Permalink to this headline"></a></h2>
+<p>处理大文件的时候，每次都请求全部大小是很消耗资源的事情， 通过range方式配合slice方式即可请求特定部分。</p>
+<p>准备一个大文件</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>dd <span class="k">if</span><span class="o">=</span>/dev/zero <span class="nv">of</span><span class="o">=</span>big.avi <span class="nv">bs</span><span class="o">=</span>1M <span class="nv">count</span><span class="o">=</span><span class="m">88</span>
+</pre></div>
+</div>
+<p>配置一个上游服务</p>
+<p>就是简单配置的静态集群的。</p>
+<p>配置openrestry</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>proxy_cache_path /root/openresty/nginx/cache levels=2:2 keys_zone=five:10m loader_threshold=300 
+                     loader_files=200 max_size=200m inactive=1m;
+
+server {
+	listen 8084;
+	server_name n-slice.linuxpanda.tech;
+	error_log myerror.log debug;
+
+	root html;
+
+	location / {
+		# 这里为了可以在响应中看到是否命中，添加个header看看
+		proxy_cache five;
+		proxy_cache_valid 200 206 1m;
+		add_header X-Cache-Status $upstream_cache_status;
+
+		proxy_set_header  Range $slice_range;
+		proxy_cache_key $scheme$uri$slice_range ;
+		proxy_pass http://localhost:8005;
+	}
+}
+</pre></div>
+</div>
+<p>验证下</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># curl http://n-slice.linuxpanda.tech:8084/big.avi -r 100-200</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># tail -n 2 /root/openresty/nginx/logs/access.log</span>
+<span class="m">10</span>.157.89.215 - - <span class="o">[</span><span class="m">12</span>/Jan/2022:10:47:08 +0800<span class="o">]</span> <span class="s2">&quot;GET /big.avi HTTP/1.1&quot;</span> <span class="m">502</span> <span class="m">173</span> <span class="s2">&quot;-&quot;</span> <span class="s2">&quot;curl/7.29.0&quot;</span> <span class="s2">&quot;-&quot;</span><span class="nv">request_filename</span><span class="o">=</span>/root/openresty/nginx/html/big.avi <span class="nv">document_root</span><span class="o">=</span>/root/openresty/nginx/html <span class="nv">realpath_root</span><span class="o">=</span>/root/openresty/nginx/html
+<span class="m">10</span>.157.89.215 - - <span class="o">[</span><span class="m">12</span>/Jan/2022:10:47:55 +0800<span class="o">]</span> <span class="s2">&quot;GET /big.avi HTTP/1.1&quot;</span> <span class="m">206</span> <span class="m">101</span> <span class="s2">&quot;-&quot;</span> <span class="s2">&quot;curl/7.29.0&quot;</span> <span class="s2">&quot;-&quot;</span><span class="nv">request_filename</span><span class="o">=</span>/root/openresty/nginx/html/big.avi <span class="nv">document_root</span><span class="o">=</span>/root/openresty/nginx/html <span class="nv">realpath_root</span><span class="o">=</span>/root/openresty/nginx/html
+<span class="o">[</span>root@zhaojiedi-elk-2 nginx<span class="o">]</span><span class="c1"># tail -n 2 /root/nginx/logs/access.log</span>
+<span class="m">127</span>.0.0.1 - - <span class="o">[</span><span class="m">11</span>/Jan/2022:15:47:39 +0800<span class="o">]</span> <span class="s2">&quot;GET /index.html HTTP/1.0&quot;</span> <span class="m">200</span> <span class="m">612</span> <span class="s2">&quot;-&quot;</span> <span class="s2">&quot;curl/7.29.0&quot;</span>
+<span class="m">127</span>.0.0.1 - - <span class="o">[</span><span class="m">12</span>/Jan/2022:10:47:55 +0800<span class="o">]</span> <span class="s2">&quot;GET /big.avi HTTP/1.0&quot;</span> <span class="m">200</span> <span class="m">92274688</span> <span class="s2">&quot;-&quot;</span> <span class="s2">&quot;curl/7.29.0&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="id29">
+<h2><span class="section-number">4.42. </span>缓存优化-文件打开<a class="headerlink" href="#id29" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>open_file_cache: 打开文件缓存的个数，超过的个数使用lru算法。</p></li>
+<li><p>open_file_cache_valid: 文件缓存的有效时间。</p></li>
+<li><p>open_file_cache_errors: 是否缓存文件查询的错误信息。默认off.</p></li>
+<li><p>open_file_cache_min_uses: 具体没有看明白文档。</p></li>
+</ul>
+<p>文件缓存都缓存什么内容</p>
+<ul class="simple">
+<li><p>文件句柄</p></li>
+<li><p>文件修改时间</p></li>
+<li><p>文件大小</p></li>
+<li><p>文件查询时候的错误信息(比如文件不能存在，或者没有权限)</p></li>
+<li><p>目录是否存在</p></li>
+</ul>
+<p>配置如下</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>server {
+	listen 8084;
+	server_name n-openfilecache.linuxpanda.tech;
+
+	root html;
+
+	location / {
+		open_file_cache max=10 inactive=300s;
+		open_file_cache_min_uses 1; 
+		open_file_cache_valid 300s; 
+		open_file_cache_errors on;	
+	}
+}
+</pre></div>
+</div>
+<p>验证</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 这里找到对应nginx的work进程，看看这个具体进程的系统调用</span>
+<span class="o">[</span>root@zhaojiedi-elk-2 ~<span class="o">]</span><span class="c1"># strace -p 14160</span>
+strace: Process <span class="m">14160</span> attached
+<span class="c1"># 默认卡在wait这个地方，等待连接请求</span>
+epoll_wait<span class="o">(</span><span class="m">13</span>,<span class="o">[{</span>EPOLLIN, <span class="o">{</span><span class="nv">u32</span><span class="o">=</span><span class="m">44802384</span>, <span class="nv">u64</span><span class="o">=</span><span class="m">44802384</span><span class="o">}}]</span>, <span class="m">512</span>, -1<span class="o">)</span> <span class="o">=</span> <span class="m">1</span>
+<span class="c1"># 收到一个请求</span>
+accept4<span class="o">(</span><span class="m">11</span>, <span class="o">{</span><span class="nv">sa_family</span><span class="o">=</span>AF_INET, <span class="nv">sin_port</span><span class="o">=</span>htons<span class="o">(</span><span class="m">40254</span><span class="o">)</span>, <span class="nv">sin_addr</span><span class="o">=</span>inet_addr<span class="o">(</span><span class="s2">&quot;10.157.89.215&quot;</span><span class="o">)}</span>, <span class="o">[</span><span class="m">112</span>-&gt;16<span class="o">]</span>, SOCK_CLOEXEC<span class="p">|</span>SOCK_NONBLOCK<span class="o">)</span> <span class="o">=</span> <span class="m">4</span>
+epoll_ctl<span class="o">(</span><span class="m">13</span>, EPOLL_CTL_ADD, <span class="m">4</span>, <span class="o">{</span>EPOLLIN<span class="p">|</span>EPOLLRDHUP<span class="p">|</span>EPOLLET, <span class="o">{</span><span class="nv">u32</span><span class="o">=</span><span class="m">44803080</span>, <span class="nv">u64</span><span class="o">=</span><span class="m">44803080</span><span class="o">}})</span> <span class="o">=</span> <span class="m">0</span>
+epoll_wait<span class="o">(</span><span class="m">13</span>, <span class="o">[{</span>EPOLLIN, <span class="o">{</span><span class="nv">u32</span><span class="o">=</span><span class="m">44803080</span>, <span class="nv">u64</span><span class="o">=</span><span class="m">44803080</span><span class="o">}}]</span>, <span class="m">512</span>, <span class="m">60000</span><span class="o">)</span> <span class="o">=</span> <span class="m">1</span>
+<span class="c1"># 接受头部</span>
+recvfrom<span class="o">(</span><span class="m">4</span>, <span class="s2">&quot;GET / HTTP/1.1\r\nUser-Agent: curl&quot;</span>..., <span class="m">1024</span>, <span class="m">0</span>, NULL, NULL<span class="o">)</span> <span class="o">=</span> <span class="m">100</span>
+<span class="c1"># 写响应</span>
+writev<span class="o">(</span><span class="m">4</span>, <span class="o">[{</span><span class="nv">iov_base</span><span class="o">=</span><span class="s2">&quot;HTTP/1.1 200 OK\r\nServer: openres&quot;</span>..., <span class="nv">iov_len</span><span class="o">=</span><span class="m">255</span><span class="o">}]</span>, <span class="m">1</span><span class="o">)</span> <span class="o">=</span> <span class="m">255</span>
+<span class="c1"># 发送文件body</span>
+sendfile<span class="o">(</span><span class="m">4</span>, <span class="m">5</span>, <span class="o">[</span><span class="m">0</span><span class="o">]</span> <span class="o">=</span>&gt; <span class="o">[</span><span class="m">1129</span><span class="o">]</span>, <span class="m">1129</span><span class="o">)</span>     <span class="o">=</span> <span class="m">1129</span>
+lstat<span class="o">(</span><span class="s2">&quot;/root&quot;</span>, <span class="o">{</span><span class="nv">st_mode</span><span class="o">=</span>S_IFDIR<span class="p">|</span><span class="m">0550</span>, <span class="nv">st_size</span><span class="o">=</span><span class="m">4096</span>, ...<span class="o">})</span> <span class="o">=</span> <span class="m">0</span>
+lstat<span class="o">(</span><span class="s2">&quot;/root/openresty&quot;</span>, <span class="o">{</span><span class="nv">st_mode</span><span class="o">=</span>S_IFDIR<span class="p">|</span><span class="m">0755</span>, <span class="nv">st_size</span><span class="o">=</span><span class="m">4096</span>, ...<span class="o">})</span> <span class="o">=</span> <span class="m">0</span>
+lstat<span class="o">(</span><span class="s2">&quot;/root/openresty/nginx&quot;</span>, <span class="o">{</span><span class="nv">st_mode</span><span class="o">=</span>S_IFDIR<span class="p">|</span><span class="m">0755</span>, <span class="nv">st_size</span><span class="o">=</span><span class="m">4096</span>, ...<span class="o">})</span> <span class="o">=</span> <span class="m">0</span>
+lstat<span class="o">(</span><span class="s2">&quot;/root/openresty/nginx/html&quot;</span>, <span class="o">{</span><span class="nv">st_mode</span><span class="o">=</span>S_IFDIR<span class="p">|</span><span class="m">0755</span>, <span class="nv">st_size</span><span class="o">=</span><span class="m">4096</span>, ...<span class="o">})</span> <span class="o">=</span> <span class="m">0</span>
+write<span class="o">(</span><span class="m">3</span>, <span class="s2">&quot;10.157.89.215 - - [12/Jan/2022:1&quot;</span>..., <span class="m">232</span><span class="o">)</span> <span class="o">=</span> <span class="m">232</span>
+setsockopt<span class="o">(</span><span class="m">4</span>, SOL_TCP, TCP_NODELAY, <span class="o">[</span><span class="m">1</span><span class="o">]</span>, <span class="m">4</span><span class="o">)</span> <span class="o">=</span> <span class="m">0</span>
+epoll_wait<span class="o">(</span><span class="m">13</span>, <span class="o">[{</span>EPOLLIN<span class="p">|</span>EPOLLRDHUP, <span class="o">{</span><span class="nv">u32</span><span class="o">=</span><span class="m">44803080</span>, <span class="nv">u64</span><span class="o">=</span><span class="m">44803080</span><span class="o">}}]</span>, <span class="m">512</span>, <span class="m">65000</span><span class="o">)</span> <span class="o">=</span> <span class="m">1</span>
+recvfrom<span class="o">(</span><span class="m">4</span>, <span class="s2">&quot;&quot;</span>, <span class="m">1024</span>, <span class="m">0</span>, NULL, NULL<span class="o">)</span>    <span class="o">=</span> <span class="m">0</span>
+close<span class="o">(</span><span class="m">4</span><span class="o">)</span>                                <span class="o">=</span> <span class="m">0</span>
+epoll_wait<span class="o">(</span><span class="m">13</span>,
+</pre></div>
+</div>
+</section>
+<section id="http2">
+<h2><span class="section-number">4.43. </span>http2主要特性<a class="headerlink" href="#http2" title="Permalink to this headline"></a></h2>
+<dl class="simple">
+<dt>传输数据量大幅减少</dt><dd><p>二进制数据传输
+标头压缩</p>
+</dd>
+<dt>多路复用</dt><dd><p>消息优先级</p>
+</dd>
+<dt>服务器消息推送</dt><dd><p>并行推送</p>
+</dd>
+</dl>
+</section>
+<section id="id30">
+<h2><span class="section-number">4.44. </span>http2核心概念<a class="headerlink" href="#id30" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>连接： 1个tcp连接</p></li>
+<li><p>流：一个双向流</p></li>
+<li><p>消息： 对应http的请求或者响应</p></li>
+<li><p>数据帧： 最小单位，以二进制压缩格存放http1中的内容。</p></li>
+</ul>
+</section>
+<section id="id31">
+<h2><span class="section-number">4.45. </span>协议分层和多路复用<a class="headerlink" href="#id31" title="Permalink to this headline"></a></h2>
+<img alt="../_images/nginx33.png" src="../_images/nginx33.png" />
+<p>传输是无序的，接收的时候组装。</p>
+<p>优先级1-255</p>
+</section>
+<section id="id32">
+<h2><span class="section-number">4.46. </span>http2推送文件<a class="headerlink" href="#id32" title="Permalink to this headline"></a></h2>
+<ul class="simple">
+<li><p>http2_push_preload 跟进header指定， 上游服务器可以生成header.</p></li>
+<li><p>http2_push 推送哪个url</p></li>
+<li><p>http2_push_max_number: 推送最大数</p></li>
+<li><p>http2_recv_timeout: 如果超过这个时间没有收到请求就关闭</p></li>
+<li><p>http2_idle_timeout: 超过这个时间，就关闭连接</p></li>
+<li><p>http2_max_concurrent_pusher: 最大推送个数</p></li>
+<li><p>http2_max-concurrent_streams: 最大并发流个数</p></li>
+<li><p>http2_max_field_size： header最大大小</p></li>
+<li><p>http2_max_requests: 一个连接最大请求个数</p></li>
+</ul>
+</section>
+<section id="nginxgrpc">
+<h2><span class="section-number">4.47. </span>nginx反向代理grpc<a class="headerlink" href="#nginxgrpc" title="Permalink to this headline"></a></h2>
+<p>stream模块处理的7个阶段</p>
+<ul class="simple">
+<li><p>POST_ACCEPT</p></li>
+<li><p>PREACCESS</p></li>
+<li><p>ACCESSS</p></li>
+<li><p>SSL</p></li>
+<li><p>PREFEAD</p></li>
+<li><p>CONTENT</p></li>
+<li><p>LOG</p></li>
+</ul>
+</section>
+<section id="nginx4">
+<h2><span class="section-number">4.48. </span>nginx代理4层样例<a class="headerlink" href="#nginx4" title="Permalink to this headline"></a></h2>
+</section>
+<section id="proxy-protocol">
+<h2><span class="section-number">4.49. </span>proxy_protocol 协议<a class="headerlink" href="#proxy-protocol" title="Permalink to this headline"></a></h2>
+<dl class="simple">
+<dt>v1协议：</dt><dd><p>proxy tcp4 ip1 ip2 port1 port2 rn</p>
+</dd>
+<dt>v2协议：</dt><dd><p>签名+ version_command + 地址族+ 长度</p>
+</dd>
+</dl>
+</section>
+<section id="udp">
+<h2><span class="section-number">4.50. </span>udp反向代理<a class="headerlink" href="#udp" title="Permalink to this headline"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="03-nginx%E7%9A%84http%E6%A8%A1%E5%9D%97.html" class="btn btn-neutral float-left" title="3. nginx的http模块" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="05-nginx%E4%BC%98%E5%8C%96.html" class="btn btn-neutral float-right" title="5. nginx优化" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, zhaojiedi1992@outlook.com.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
